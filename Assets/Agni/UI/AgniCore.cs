@@ -85,6 +85,14 @@ namespace Agni.UI
                     case GfxPreset.VeryHigh: urp.renderScale = 1.0f; urp.msaaSampleCount = 4; urp.shadowDistance = 90f; break;
                 }
             }
+            // LOD tiers (houses, loot, trees): LOW drops the finest house mesh and switches early; VERY HIGH keeps detail far out.
+            switch (Gfx)
+            {
+                case GfxPreset.Smooth: QualitySettings.maximumLODLevel = 1; QualitySettings.lodBias = 0.6f; break;
+                case GfxPreset.Standard: QualitySettings.maximumLODLevel = 0; QualitySettings.lodBias = 1.0f; break;
+                case GfxPreset.Ultra: QualitySettings.maximumLODLevel = 0; QualitySettings.lodBias = 1.5f; break;
+                case GfxPreset.VeryHigh: QualitySettings.maximumLODLevel = 0; QualitySettings.lodBias = 2.0f; break;
+            }
             // Sound: SFX sources read AgniSettings.Sfx, music sources read AgniSettings.Music (see AgniLobby.music).
         }
     }

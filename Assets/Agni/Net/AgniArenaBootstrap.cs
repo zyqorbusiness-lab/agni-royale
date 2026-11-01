@@ -15,6 +15,7 @@ namespace Agni.Net
         void Awake()
         {
             AgniMatch.ArenaRadius = arenaRadius; t0 = Time.realtimeSinceStartup;
+            AgniVillages.Root = null; AgniVillages.Build(null); // houses + loot spots (same on server and clients)
             Application.targetFrameRate = AgniNetConfig.HeadlessServer ? 30 : Application.targetFrameRate;
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) StripForHeadless();
             if (AgniNet.NM != null && AgniNet.NM.SceneManager != null) AgniNet.NM.SceneManager.OnLoadEventCompleted += Loaded;

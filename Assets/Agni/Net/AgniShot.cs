@@ -36,6 +36,8 @@ namespace Agni.Net
             if (mode == "friends") yield return Friends();
             else if (mode == "net") yield return NetTest();
             else if (mode == "ugs") yield return UgsTest();
+            else if (mode == "loot") yield return Loot();
+            else if (mode == "netloot") yield return NetLoot();
             else yield return Grenade();
             Log("done"); Quit(0);
         }
@@ -175,6 +177,179 @@ namespace Agni.Net
         }
 
         // ------------------------------------------------------------------ net (2 processes)
+
+        // ------------------------------------------------------------------ loot (LOOT v1 proof): rifle in hand, house loot, bag, airdrop
+        Vector3 OpenGround(float r0)
+        {
+            for (int k = 0; k < 64; k++)
+            {
+                float a = k * 0.7f, r = r0 + (k % 5) * 9f; var p = AgniMatch.Ground(new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r));
+                if (p.y > 0.8f) continue; bool clear = true;
+                for (int d = 0; d < 12 && clear; d++) { var dir = Quaternion.Euler(0, d * 30, 0) * Vector3.forward; if (Physics.Raycast(p + Vector3.up * 1.2f, dir, 10f, ~0, QueryTriggerInteraction.Ignore)) clear = false; }
+                if (clear) return p;
+            }
+            return AgniMatch.Ground(new Vector3(60, 0, 20));
+        }
+        void HudOn(bool on) { var lp = AgniLocalPlayer.Instance; if (lp.Hud != null) lp.Hud.gameObject.SetActive(on); if (lp.LootHud != null) lp.LootHud.gameObject.SetActive(on); }
+        void LookFrom(Vector3 camPos, Vector3 at) { var c = AgniLocalPlayer.Instance.Cam; c.transform.SetPositionAndRotation(camPos, Quaternion.LookRotation(at - camPos)); }
+        IEnumerator Loot()
+        {
+            yield return WaitPlaying(2.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            Log("loot stacks live=" + AgniPickup.Live.Count + " spawned=" + AgniLoot.Spawned + " spots=" + AgniVillages.Spots.Count + " held=" + (ItemId)me.HeldGun.Value);
+            // ---- A: rifle in hand, open ground, camera on the sunny side
+            var open = OpenGround(95f);
+            Light sunL = RenderSettings.sun; if (sunL == null) foreach (var L in FindObjectsByType<Light>(FindObjectsSortMode.None)) if (L.type == LightType.Directional) { sunL = L; break; }
+            var sunH = sunL != null ? Vector3.ProjectOnPlane(sunL.transform.forward, Vector3.up).normalized : Vector3.forward; if (sunH.sqrMagnitude < 0.01f) sunH = Vector3.forward;
+            var faceDir = Quaternion.Euler(0, 30, 0) * -sunH; float yaw = Mathf.Atan2(faceDir.x, faceDir.z) * Mathf.Rad2Deg;
+            me.ServerTeleport(open, yaw); lp.Yaw = yaw; lp.Pitch = 2; yield return new WaitForSecondsRealtime(1.2f);
+            HudOn(false); lp.freeCam = true;
+            var body = lp.ViewPos; var f = Quaternion.Euler(0, yaw, 0) * Vector3.forward; var rgt = Quaternion.Euler(0, yaw, 0) * Vector3.right;
+            LookFrom(body - sunH * 2.6f + Vector3.up * 1.5f, body + Vector3.up * 1.25f); lp.Cam.fieldOfView = 40; yield return Frames(3); yield return Shot("rifle_front");
+            LookFrom(body + rgt * 2.4f + f * 0.5f + Vector3.up * 1.45f, body + Vector3.up * 1.25f + f * 0.3f); yield return Frames(3); yield return Shot("rifle_side");
+            lp.freeCam = false; HudOn(true); lp.Cam.fieldOfView = 62; yield return Frames(3); yield return Shot("rifle_tps");
+            var view = me.GetComponentInChildren<AgniCharacterView>(); var gunT = view != null ? view.transform.Find("Held_" + (ItemId)me.HeldGun.Value) : null;
+            Log("held gun object=" + (gunT != null) + (gunT != null ? " pos=" + (gunT.position - body) + " fwd=" + gunT.TransformDirection(gunT.GetComponent<AgniLootView.GunAxes>().muzzleLocal.normalized) + " aim=" + f : ""));
+            // scope (2x on the AGNI-47) toward the nearest village
+            Vector3 vc = Vector3.zero; float vd = 1e9f; foreach (var vg in AgniVillages.Villages) { var d3 = new Vector3(vg.c.x, 0, vg.c.y) - body; d3.y = 0; if (d3.magnitude < vd) { vd = d3.magnitude; vc = new Vector3(vg.c.x, 0, vg.c.y); } }
+            Face(vc, 2); lp.aimToggle = true; yield return new WaitForSecondsRealtime(1.0f); yield return Shot("scope2x"); lp.aimToggle = false; yield return new WaitForSecondsRealtime(0.4f);
+            // ---- B: inside a house with loot on the floor
+            Vector3 best = Vector3.zero; int bestN = 0;
+            foreach (var sp in AgniVillages.Spots)
+            {
+                if (sp.tier == 0 || sp.pos.y > 0.6f || sp.pos.y < 0.15f) continue;
+                if (sp.building < AgniVillages.Footprints.Count) { float fr = AgniVillages.Footprints[sp.building].r; if (fr < 5.0f || fr > 6.6f) continue; } // pakka / chhat ghar rooms
+                if (!Physics.Raycast(sp.pos + Vector3.up * 0.5f, Vector3.up, 6f, ~0, QueryTriggerInteraction.Ignore)) continue; // roof above = indoors
+                int n = 0; foreach (var pk in AgniPickup.Live) if (pk != null && (pk.transform.position - sp.pos).sqrMagnitude < 2.4f * 2.4f) n += AgniItems.IsGun(pk.Id) || AgniItems.Cat(pk.Id) == ItemCat.Vest || AgniItems.Cat(pk.Id) == ItemCat.Helmet ? 3 : 1;
+                if (n > bestN) { bestN = n; best = sp.pos; }
+            }
+            Log("house spot " + best + " stacks near=" + bestN);
+            Vector3 c = Vector3.zero; int cn = 0; foreach (var pk in AgniPickup.Live) if (pk != null && (pk.transform.position - best).sqrMagnitude < 2.4f * 2.4f) { c += pk.transform.position; cn++; }
+            if (cn > 0) c /= cn; else c = best;
+            float bestFree = 0; Vector3 bdir = Vector3.forward;
+            for (int d = 0; d < 16; d++) { var dir = Quaternion.Euler(0, d * 22.5f, 0) * Vector3.forward; float free = Physics.Raycast(c + Vector3.up * 1.0f, dir, out var h, 5f, ~0, QueryTriggerInteraction.Ignore) ? h.distance : 5f; if (free > bestFree) { bestFree = free; bdir = dir; } }
+            var stand = c + bdir * Mathf.Clamp(bestFree - 0.6f, 1.2f, 2.6f); stand.y = c.y; yaw = Mathf.Atan2(-bdir.x, -bdir.z) * Mathf.Rad2Deg;
+            stand = c + bdir * 1.1f; stand.y = c.y;
+            me.ServerTeleport(stand, yaw); lp.Yaw = yaw; lp.Pitch = 30; me.AutoPickRpc(false); yield return new WaitForSecondsRealtime(1.5f);
+            // camera in the room: back against the open side, under the ceiling, looking down at the floor loot (HUD on)
+            float ceil = Physics.Raycast(c + Vector3.up * 0.4f, Vector3.up, out var ch, 6f, ~0, QueryTriggerInteraction.Ignore) ? ch.point.y - c.y : 3f;
+            Vector3 camP = c + Vector3.up * 2f; float bestIn = 0;
+            for (int d = 0; d < 24; d++)
+            {   // farthest point from the loot that is still under this roof (so the camera stays inside the room)
+                var dir = Quaternion.Euler(0, d * 15f, 0) * Vector3.forward; float free = Physics.Raycast(c + Vector3.up * 1.6f, dir, out var hh, 5f, ~0, QueryTriggerInteraction.Ignore) ? hh.distance : 5f;
+                float dist = Mathf.Min(free, 2.6f) - 0.4f; if (dist < bestIn) continue;
+                var cand = c + dir * dist; cand.y = c.y + Mathf.Clamp(ceil - 0.5f, 1.5f, 2.1f);
+                if (!Physics.Raycast(cand, Vector3.up, 4f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                var toC = (c + Vector3.up * 0.3f) - cand; if (Physics.Raycast(cand, toC.normalized, toC.magnitude - 0.3f, ~0, QueryTriggerInteraction.Ignore)) continue; // clear view of the loot
+                bestIn = dist; camP = cand;
+            }
+            Log("room ceil=" + ceil.ToString("0.0") + " free=" + bestFree.ToString("0.0"));
+            lp.freeCam = true; lp.Cam.fieldOfView = 72; LookFrom(camP, c + Vector3.up * 0.1f); yield return Frames(4);
+            yield return Shot("house_loot");
+            // pick the top row twice (shows the feed)
+            lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(0.5f); lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(0.5f);
+            LookFrom(camP, c + Vector3.up * 0.1f); yield return Frames(2); yield return Shot("house_picked"); lp.freeCam = false; lp.Cam.fieldOfView = 62;
+            // ---- C: the bag
+            lp.LootHud.ToggleBag(); yield return new WaitForSecondsRealtime(0.8f); yield return Shot("bag"); lp.LootHud.ToggleBag();
+            // ---- E: airdrop
+            open = OpenGround(70f); me.ServerTeleport(open, 0); lp.Yaw = 0; lp.Pitch = -10; me.AutoPickRpc(true);
+            float t0 = Time.realtimeSinceStartup; AgniCrate drop = null;
+            while (drop == null && Time.realtimeSinceStartup - t0 < 90) { foreach (var cr in AgniCrate.Live) if (cr.Kind.Value == 1) drop = cr; yield return null; }
+            if (drop == null) { Log("NO AIRDROP"); yield break; }
+            while (drop.transform.position.y - AgniMatch.Ground(drop.transform.position + Vector3.down * 200f).y > 13f && Time.realtimeSinceStartup - t0 < 120) yield return null;
+            var land = AgniMatch.Ground(new Vector3(drop.transform.position.x, 0, drop.transform.position.z));
+            var away = (me.transform.position - land); away.y = 0; away = away.sqrMagnitude > 1 ? away.normalized : Vector3.back;
+            Log("airdrop at " + drop.transform.position + " land≈" + land);
+            HudOn(true); lp.freeCam = true; LookFrom(land + away * 21f + Vector3.up * 1.6f, Vector3.Lerp(land, drop.transform.position, 0.62f)); lp.Cam.fieldOfView = 62; yield return Frames(4); yield return Shot("airdrop_falling");
+            while (!drop.Landed.Value && Time.realtimeSinceStartup - t0 < 150) { LookFrom(land + away * 26f + Vector3.up * 2.2f, drop.transform.position + Vector3.down * 4f); yield return null; }
+            yield return new WaitForSecondsRealtime(4f); lp.freeCam = false; lp.Cam.fieldOfView = 62;
+            var st = land + away * 2.6f; me.ServerTeleport(st, Mathf.Atan2(-away.x, -away.z) * Mathf.Rad2Deg); lp.Yaw = Mathf.Atan2(-away.x, -away.z) * Mathf.Rad2Deg; lp.Pitch = 12; yield return new WaitForSecondsRealtime(1.5f);
+            yield return Shot("airdrop_landed");
+            var lv = me.Inv.Value; Log("inv: g0=" + (ItemId)lv.g0 + " g1=" + (ItemId)lv.g1 + " vest=" + lv.vest + " helm=" + lv.helmet + " bag=" + lv.bag + " aR=" + lv.aR + " patti=" + lv.patti + " w=" + me.BagWeight(lv) + "/" + me.BagCap(lv) + " crateItems=" + drop.Items.Count);
+        }
+
+
+        // ------------------------------------------------------------------ netloot: 2 processes, loot + prediction over the wire
+        IEnumerator NetLoot()
+        {
+            yield return WaitPlaying(1.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            AgniPlayer other = null; float t0 = Time.realtimeSinceStartup;
+            while (other == null && Time.realtimeSinceStartup - t0 < 15) { foreach (var p in AgniPlayer.All) if (p != me && !p.IsBot.Value) other = p; if (other == null) yield return null; }
+            Log(tagName + " role=" + AgniNet.Role + " rtt=" + AgniNet.Ping() + " pickupsSeen=" + AgniPickup.Live.Count + " other=" + (other != null ? other.Nick : "none"));
+            if (other == null && AgniNet.Role == NetRole.Client)
+            {   // dedicated server: walk to the nearest loot ourselves (exercises prediction + server pickup)
+                me.AutoPickRpc(false); AgniPickup tgt = null; float bd = 1e9f;
+                foreach (var pk in AgniPickup.Live) { if (pk == null) continue; float d = Vector3.Distance(pk.transform.position, me.transform.position); if (d < bd && Mathf.Abs(pk.transform.position.y - me.transform.position.y) < 1f) { bd = d; tgt = pk; } }
+                Log(tagName + " nearest loot " + (tgt != null ? tgt.Id + " at " + bd.ToString("0.0") + " m" : "none"));
+                float maxE = 0, sumE = 0; int nE = 0; float tw = Time.realtimeSinceStartup;
+                while (tgt != null && Time.realtimeSinceStartup - tw < 14f)
+                {
+                    var d = tgt.transform.position - lp.ViewPos; d.y = 0; if (d.magnitude < 1.2f) break;
+                    lp.Yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg; lp.Pitch = 15; lp.script = new AgniLocalPlayer.Scripted { on = true, move = new Vector2(0, 1) };
+                    maxE = Mathf.Max(maxE, lp.PredictError); sumE += lp.PredictError; nE++; yield return null;
+                }
+                lp.script = new AgniLocalPlayer.Scripted { on = true, move = Vector2.zero }; yield return new WaitForSecondsRealtime(0.8f);
+                Log(tagName + " walk: predicting=" + lp.Predicting + " frames=" + nE + " avgErr=" + (sumE / Mathf.Max(1, nE)).ToString("0.000") + " maxErr=" + maxE.ToString("0.000") + " gapAtStop=" + Vector3.Distance(lp.ViewPos, me.transform.position).ToString("0.000"));
+                yield return Shot(tagName + "_a_nearby");
+                int before = AgniPickup.Live.Count; var inv0 = me.Inv.Value; lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(1.0f); lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(1.0f); var inv1 = me.Inv.Value;
+                Log(tagName + " picked: pickups " + before + " -> " + AgniPickup.Live.Count + " inv g0 " + (ItemId)inv0.g0 + "->" + (ItemId)inv1.g0 + " g1 " + (ItemId)inv1.g1 + " vest " + inv1.vest + " helm " + inv1.helmet + " bag " + inv1.bag + " aR " + inv1.aR + " aS " + inv1.aS + " aC " + inv1.aC + " aN " + inv1.aN + " patti " + inv1.patti + " held=" + (ItemId)me.HeldGun.Value);
+                yield return Shot(tagName + "_b_picked");
+                lp.LootHud.ToggleBag(); yield return new WaitForSecondsRealtime(0.6f); yield return Shot(tagName + "_c_bag"); lp.LootHud.ToggleBag();
+                lp.script = new AgniLocalPlayer.Scripted { on = false };
+                float ta2 = Time.realtimeSinceStartup; while (AgniCrate.Live.Count == 0 && Time.realtimeSinceStartup - ta2 < 40) yield return null;
+                Log(tagName + " crates seen=" + AgniCrate.Live.Count + (AgniCrate.Live.Count > 0 ? " first at " + AgniCrate.Live[0].transform.position + " items=" + AgniCrate.Live[0].Items.Count : ""));
+                yield break;
+            }
+            if (other == null) yield break;
+            // the server puts both humans in the same house: host 3 m from the richest indoor spot, client right on it
+            if (AgniNet.IsServer)
+            {
+                Vector3 best = Vector3.zero; int bestN = -1;
+                foreach (var sp in AgniVillages.Spots)
+                {
+                    if (sp.tier == 0 || sp.pos.y > 1.2f) continue; int n = 0;
+                    foreach (var pk in AgniPickup.Live) if (pk != null && (pk.transform.position - sp.pos).sqrMagnitude < 2.2f * 2.2f) n++;
+                    if (n > bestN && Physics.Raycast(sp.pos + Vector3.up * 0.5f, Vector3.up, 6f)) { bestN = n; best = sp.pos; }
+                }
+                other.ServerTeleport(best + Vector3.up * 0.05f, 0); me.ServerTeleport(best + new Vector3(0, 0.05f, -2.5f), 0);
+                Log(tagName + " moved both to house spot " + best + " stacks=" + bestN);
+            }
+            yield return new WaitForSecondsRealtime(2.0f);
+            int liveBefore = AgniPickup.Live.Count;
+            if (AgniNet.Role == NetRole.Client)
+            {
+                me.AutoPickRpc(false); yield return new WaitForSecondsRealtime(0.5f);
+                Face(other.transform.position, 20); yield return new WaitForSecondsRealtime(0.5f);
+                yield return Shot(tagName + "_a_nearby");
+                var inv0 = me.Inv.Value; lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(0.8f); lp.LootHud.PickFirst(); yield return new WaitForSecondsRealtime(1.0f);
+                var inv1 = me.Inv.Value;
+                Log(tagName + " picked: pickups " + liveBefore + " -> " + AgniPickup.Live.Count + "  inv g0 " + (ItemId)inv0.g0 + "->" + (ItemId)inv1.g0 + " g1 " + (ItemId)inv1.g1 + " vest " + inv1.vest + " helm " + inv1.helmet + " bag " + inv1.bag + " aR " + inv1.aR + " aS " + inv1.aS + " aC " + inv1.aC + " patti " + inv1.patti + " dawa " + inv1.dawa + " held=" + (ItemId)me.HeldGun.Value);
+                yield return Shot(tagName + "_b_picked");
+                lp.LootHud.ToggleBag(); yield return new WaitForSecondsRealtime(0.6f); yield return Shot(tagName + "_c_bag"); lp.LootHud.ToggleBag();
+                // prediction: run out of the house for 3 s and back, measure ghost vs server
+                float maxE = 0, sumE = 0; int nE = 0; lp.Yaw += 180; lp.script = new AgniLocalPlayer.Scripted { on = true, move = new Vector2(0, 1) };
+                float tw = Time.realtimeSinceStartup; while (Time.realtimeSinceStartup - tw < 3f) { maxE = Mathf.Max(maxE, lp.PredictError); sumE += lp.PredictError; nE++; yield return null; }
+                lp.script = new AgniLocalPlayer.Scripted { on = true, move = Vector2.zero };
+                var vp = lp.ViewPos; yield return new WaitForSecondsRealtime(0.6f);
+                Log(tagName + " prediction: predicting=" + lp.Predicting + " avgErr=" + (sumE / Mathf.Max(1, nE)).ToString("0.000") + " maxErr=" + maxE.ToString("0.000") + " settledGap=" + Vector3.Distance(lp.ViewPos, me.transform.position).ToString("0.000"));
+                lp.script = new AgniLocalPlayer.Scripted { on = false };
+            }
+            else
+            {
+                Face(other.transform.position, 15);
+                float tw = Time.realtimeSinceStartup; while (Time.realtimeSinceStartup - tw < 3.5f) { Face(other.transform.position, 15); yield return null; }
+                yield return Shot(tagName + "_a_sees_client");
+                var ov = other.Inv.Value;
+                Log(tagName + " server view of client: pickups " + liveBefore + " -> " + AgniPickup.Live.Count + " client inv g0 " + (ItemId)ov.g0 + " g1 " + (ItemId)ov.g1 + " vest " + ov.vest + " aR " + ov.aR + " aS " + ov.aS + " held=" + (ItemId)other.HeldGun.Value);
+                yield return new WaitForSecondsRealtime(4f);
+            }
+            // airdrop visible on both sides?
+            float ta = Time.realtimeSinceStartup; while (AgniCrate.Live.Count == 0 && Time.realtimeSinceStartup - ta < 25) yield return null;
+            Log(tagName + " crates seen=" + AgniCrate.Live.Count + (AgniCrate.Live.Count > 0 ? " first at " + AgniCrate.Live[0].transform.position + " items=" + AgniCrate.Live[0].Items.Count : ""));
+            yield return new WaitForSecondsRealtime(2f);
+        }
+
         IEnumerator NetTest()
         {
             yield return WaitPlaying(1.0f);

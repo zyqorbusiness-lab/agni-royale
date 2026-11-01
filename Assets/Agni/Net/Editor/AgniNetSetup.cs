@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 // Agni Royale — editor setup for the multiplayer build: network prefabs, the AgniArena test island scene,
 // import settings for combat clips / rifle, build list, and Linux client + headless server builds.
 //   Unity -batchmode -nographics -projectPath <proj> -executeMethod Agni.Net.EditorTools.AgniNetSetup.SetupBatch -logFile <log>
@@ -95,6 +96,8 @@ namespace Agni.Net.EditorTools
             th.AddComponent<AgniThrowable>(); Save(th, "AgniThrowable");
             var w = NO("AgniWall"); w.AddComponent<AgniWall>(); Save(w, "AgniWall");
             var pk = NO("AgniPickup"); pk.AddComponent<AgniPickup>(); Save(pk, "AgniPickup");
+            var cr = NO("AgniCrate"); var crt = cr.AddComponent<NetworkTransform>(); crt.SyncRotAngleX = false; crt.SyncRotAngleZ = false; crt.SyncScaleX = crt.SyncScaleY = crt.SyncScaleZ = false; crt.Interpolate = true;
+            cr.AddComponent<AgniCrate>(); Save(cr, "AgniCrate");
             var m = NO("AgniMatch"); m.AddComponent<AgniMatch>(); Save(m, "AgniMatch");
             var cb = NO("AgniCombat"); cb.AddComponent<AgniCombat>(); Save(cb, "AgniCombat");
             var z = NO("AgniZone"); z.AddComponent<AgniZone>(); Save(z, "AgniZone");
@@ -153,8 +156,11 @@ namespace Agni.Net.EditorTools
             // outside stairs to the roof
             for (int i = 0; i < 8; i++) Box("Step" + i, new Vector3(w / 2 + 0.6f, (i + 0.5f) * h / 8f, -d / 2 + 0.6f + i * 0.45f), new Vector3(1.0f, h / 8f, 0.45f), mStone, hs);
         }
+        static readonly System.Collections.Generic.List<(Vector2 c, float r)> blockers = new System.Collections.Generic.List<(Vector2, float)>();
+        static bool Blocked(Vector3 p, float pad) { foreach (var b in blockers) if ((new Vector2(p.x, p.z) - b.c).magnitude < b.r + pad) return true; return false; }
         static GameObject Prop(string kenney, Vector3 pos, float scale, float yaw, bool trunkCollider)
         {
+            if (Blocked(pos, trunkCollider ? 2.5f : 1.5f)) return null;
             var src = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Agni/Kenney/" + kenney + ".fbx"); if (src == null) return null;
             var g = (GameObject)PrefabUtility.InstantiatePrefab(src); g.transform.SetParent(root, false); g.transform.localPosition = pos; g.transform.localScale = Vector3.one * scale; g.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             var rs = g.GetComponentsInChildren<Renderer>(); if (rs.Length == 0) return g; var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
@@ -164,6 +170,12 @@ namespace Agni.Net.EditorTools
             return g;
         }
 
+        static GameObject Tree(GameObject pf, Vector3 pos, float scale, float yaw, float pad)
+        {
+            if (pf == null || Blocked(pos, pad)) return null;
+            var g = (GameObject)PrefabUtility.InstantiatePrefab(pf); g.transform.SetParent(root, false); g.transform.localPosition = pos; g.transform.localScale = Vector3.one * scale; g.transform.localRotation = Quaternion.Euler(0, yaw, 0);
+            return g;
+        }
         static void Arena()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -186,30 +198,24 @@ namespace Agni.Net.EditorTools
             Object.DestroyImmediate(beach.GetComponent<Collider>()); beach.AddComponent<MeshCollider>().sharedMesh = beach.GetComponent<MeshFilter>().sharedMesh;
             var sea = GameObject.CreatePrimitive(PrimitiveType.Plane); sea.name = "Sea"; sea.transform.SetParent(root, false); sea.transform.localScale = new Vector3(400, 1, 400); sea.transform.localPosition = new Vector3(0, -1.0f, 0); sea.GetComponent<MeshRenderer>().sharedMaterial = mSea;
 
-            // villages: a central chowk + 6 hamlets on a ring + scattered farm houses
-            var mats = new[] { mWallA, mWallB, mWallC };
-            void Hamlet(Vector3 c, int n, float spread)
-            {
-                for (int i = 0; i < n; i++)
-                {
-                    var p = c + new Vector3(Rf(-spread, spread), 0, Rf(-spread, spread)); bool clash = false;
-                    foreach (Transform t in root) if (t.name == "House" && (t.localPosition - p).sqrMagnitude < 15 * 15) clash = true;
-                    if (clash) continue;
-                    House(p, Mathf.Round(Rf(0, 4)) * 90 + Rf(-8, 8), Rf(6, 10), Rf(6, 9), Rf(3.0f, 3.6f), mats[rnd.Next(3)], rnd.NextDouble() < 0.3);
-                }
-            }
-            Hamlet(Vector3.zero, 9, 32);
-            for (int k = 0; k < 6; k++) { float a = k / 6f * Mathf.PI * 2 + 0.4f; Hamlet(new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * 135f, 6, 26); }
-            for (int k = 0; k < 14; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(70, 215); House(new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0, 360), Rf(5, 7), Rf(5, 7), 3f, mats[rnd.Next(3)], false); }
+            // villages (AgniVillages, built at runtime from code): build once here only to learn the footprints, keep props off them
+            AgniVillageSetup.Materials();
+            AgniVillages.Root = null; var vr = AgniVillages.Build(null); blockers.Clear();
+            foreach (var f in AgniVillages.Footprints) blockers.Add((f.c, f.r + 1.5f));
+            Object.DestroyImmediate(vr.gameObject); AgniVillages.Root = null;
             // compound walls (waist / chest high cover)
-            for (int k = 0; k < 40; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(15, 220); var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.3f, 0.35f), mCompound, root, Rf(0, 180)); }
-            // nature (Kenney CC0 nature kit) — trees, rocks; barrels / crates near houses
-            string[] trees = { "tree_oak", "tree_default", "tree_fat", "tree_palmTall", "tree_palmDetailedTall", "tree_pineTallA" };
-            for (int k = 0; k < 150; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 245f; Prop(trees[rnd.Next(trees.Length)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(3.6f, 5.2f), Rf(0, 360), true); }
+            for (int k = 0; k < 40; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(15, 220); var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); if (Blocked(p, 7f)) continue; Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.3f, 0.35f), mCompound, root, Rf(0, 180)); }
+            // nature: our own Indian trees (neem, mango, palm, khejri, gulmohar, banana, lantana bushes); a few kit rocks + barrels/crates
+            var treePf = AgniTreeSetup.Build(); var big = new List<GameObject>(); var bushes = new List<GameObject>();
+            foreach (var kv in treePf) { if (kv.Key.StartsWith("Lantana") || kv.Key.StartsWith("Banana")) bushes.Add(kv.Value); else big.Add(kv.Value); if (kv.Key.StartsWith("Neem") || kv.Key.StartsWith("Mango")) big.Add(kv.Value); }
+            for (int k = 0; k < 150 && big.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 245f; Tree(big[rnd.Next(big.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.85f, 1.12f), Rf(0, 360), 3.5f); }
+            // village edges: banana plants + lantana hedges around each village ring
+            foreach (var v in AgniVillages.Villages) for (int k = 0; k < 7 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2); var p = new Vector3(v.c.x + Mathf.Cos(a) * (v.r + Rf(2, 9)), 0, v.c.y + Mathf.Sin(a) * (v.r + Rf(2, 9))); Tree(bushes[rnd.Next(bushes.Count)], p, Rf(0.8f, 1.15f), Rf(0, 360), 1.5f); }
+            for (int k = 0; k < 60 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 235f; Tree(bushes[rnd.Next(bushes.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.8f, 1.2f), Rf(0, 360), 1.5f); }
             string[] rocks = { "rock_largeA", "rock_tallA", "stone_tallA" };
-            for (int k = 0; k < 70; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 240f; Prop(rocks[rnd.Next(rocks.Length)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(2.5f, 4.5f), Rf(0, 360), false); }
-            string[] small = { "barrel", "box-large", "tent-canvas", "tent_detailedOpen", "crops_cornStageD", "crops_wheatStageB" };
-            for (int k = 0; k < 80; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.01f, 1f)) * 225f; var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), nm.StartsWith("crops") ? 3.2f : nm.StartsWith("tent") ? 2.6f : 2.2f, Rf(0, 360), false); }
+            for (int k = 0; k < 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 240f; Prop(rocks[rnd.Next(rocks.Length)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(2.5f, 4.5f), Rf(0, 360), false); }
+            string[] small = { "barrel", "box-large" };
+            for (int k = 0; k < 40; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.01f, 1f)) * 225f; var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), 2.2f, Rf(0, 360), false); }
 
             // light: bright warm Indian daylight, soft haze
             var sunGo = new GameObject("Sun"); var sun = sunGo.AddComponent<Light>(); sun.type = LightType.Directional; sun.color = new Color(1f, 0.95f, 0.86f); sun.intensity = 1.35f; sun.shadows = LightShadows.Soft; sunGo.transform.rotation = Quaternion.Euler(47, -38, 0);
@@ -255,7 +261,7 @@ namespace Agni.Net.EditorTools
             var scenes = NetScenes();
             if (AgniNetConfig.Has("-arenaFirst")) scenes = scenes.Where(s => s == ArenaPath).Concat(scenes.Where(s => s != ArenaPath)).ToArray(); // automated net tests boot straight into the arena
             else if (AgniNetConfig.Has("-lobbyFirst")) scenes = scenes.Where(s => s.EndsWith("/Lobby.unity")).Concat(scenes.Where(s => !s.EndsWith("/Lobby.unity"))).ToArray(); // online (UGS) tests start in the Mahal lobby
-            var opts = new BuildPlayerOptions { scenes = scenes, locationPathName = Path.Combine(outDir, server ? "AgniRoyaleServer.x86_64" : "AgniRoyale.x86_64"), target = BuildTarget.StandaloneLinux64, targetGroup = BuildTargetGroup.Standalone, options = BuildOptions.None };
+            var opts = new BuildPlayerOptions { scenes = scenes, locationPathName = Path.Combine(outDir, server ? "AgniRoyaleServer.x86_64" : "AgniRoyale.x86_64"), target = BuildTarget.StandaloneLinux64, targetGroup = BuildTargetGroup.Standalone, options = AgniNetConfig.Has("-dev") ? BuildOptions.Development : BuildOptions.None };
                         if (server)
             {
                 // Dedicated Server subtarget needs Unity's "Linux Dedicated Server Build Support" module. Without it we ship the

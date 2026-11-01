@@ -357,25 +357,6 @@ namespace Agni.Net
             }
             return root;
         }
-        public static GameObject BuildLootView(LootKind k, Transform parent)
-        {
-            GameObject v;
-            if ((byte)k <= 4) { v = BuildThrowableView((ThrowKind)(byte)k, parent); v.transform.localScale = Vector3.one * 2.2f; v.transform.localPosition = Vector3.up * 0.18f; }
-            else
-            {
-                v = new GameObject("Loot_" + k); v.transform.SetParent(parent, false);
-                var g = GameObject.CreatePrimitive(PrimitiveType.Cube); UnityEngine.Object.Destroy(g.GetComponent<Collider>()); g.transform.SetParent(v.transform, false);
-                var m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                if (k == LootKind.Ammo) { g.transform.localScale = new Vector3(0.32f, 0.2f, 0.2f); m.SetColor("_BaseColor", new Color(0.32f, 0.36f, 0.22f)); }
-                else { g.transform.localScale = new Vector3(0.3f, 0.12f, 0.22f); m.SetColor("_BaseColor", new Color(0.94f, 0.94f, 0.9f)); var c = GameObject.CreatePrimitive(PrimitiveType.Cube); UnityEngine.Object.Destroy(c.GetComponent<Collider>()); c.transform.SetParent(g.transform, false); c.transform.localScale = new Vector3(0.5f, 1.05f, 0.18f); var cm = new Material(m); cm.SetColor("_BaseColor", new Color(0.85f, 0.15f, 0.12f)); c.GetComponent<Renderer>().sharedMaterial = cm; var c2 = UnityEngine.Object.Instantiate(c, g.transform); c2.transform.localScale = new Vector3(0.18f, 1.05f, 0.7f); }
-                g.GetComponent<Renderer>().sharedMaterial = m; g.transform.localPosition = Vector3.up * 0.12f;
-            }
-            // soft ground glow so loot reads from a distance (subtle, no neon)
-            var glow = new GameObject("LootGlow"); glow.transform.SetParent(parent, false); glow.transform.localPosition = Vector3.up * 0.03f; glow.transform.localRotation = Quaternion.Euler(90, 0, 0); glow.transform.localScale = Vector3.one * 0.9f;
-            Init(); var q = GameObject.CreatePrimitive(PrimitiveType.Quad); UnityEngine.Object.Destroy(q.GetComponent<Collider>()); q.transform.SetParent(glow.transform, false);
-            var qm = new Material(mAlphaSoft); qm.SetColor("_Color", new Color(1f, 0.85f, 0.45f, 0.45f)); q.GetComponent<Renderer>().sharedMaterial = qm; q.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            v.AddComponent<LootSpin>(); return v;
-        }
         class LootSpin : MonoBehaviour { void Update() { transform.Rotate(0, 50 * Time.deltaTime, 0, Space.World); } }
     }
 

@@ -11,7 +11,7 @@ namespace Agni.Net
     public struct AgniInput : INetworkSerializable
     {
         public Vector2 move; public float yaw, pitch; public Vector3 aim; public ushort buttons;
-        public const ushort Fire = 1, Sprint = 2, Interact = 4;
+        public const ushort Fire = 1, Sprint = 2, Interact = 4, Aim = 8;
         public bool Has(ushort b) => (buttons & b) != 0;
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         { s.SerializeValue(ref move); s.SerializeValue(ref yaw); s.SerializeValue(ref pitch); s.SerializeValue(ref aim); s.SerializeValue(ref buttons); }
@@ -20,7 +20,7 @@ namespace Agni.Net
     public enum HitKind : byte { World = 0, Body = 1, Head = 2, Wall = 3, None = 4 }
 
     [RequireComponent(typeof(CharacterController))]
-    public class AgniPlayer : NetworkBehaviour
+    public partial class AgniPlayer : NetworkBehaviour
     {
         public static readonly List<AgniPlayer> All = new List<AgniPlayer>();
         public static AgniPlayer Local; // this device's own human fighter
@@ -35,7 +35,7 @@ namespace Agni.Net
         public NetworkVariable<float> Knock = new NetworkVariable<float>(KnockMax);
         public NetworkVariable<byte> Life = new NetworkVariable<byte>();
         public NetworkVariable<int> Kills = new NetworkVariable<int>();
-        public NetworkVariable<int> Ammo = new NetworkVariable<int>(MagSize);
+        public NetworkVariable<int> Ammo = new NetworkVariable<int>(0);
         public NetworkVariable<int> Reserve = new NetworkVariable<int>(90);
         public NetworkVariable<byte> Slot = new NetworkVariable<byte>();          // 0 gun, 1 throwable
         public NetworkVariable<byte> Sel = new NetworkVariable<byte>((byte)ThrowKind.Gola);
@@ -59,7 +59,7 @@ namespace Agni.Net
 
         // ---- server state
         [System.NonSerialized] public AgniInput input; [System.NonSerialized] public AgniBotBrain brain;
-        CharacterController cc; float vy, fireCd, bloom, reloadT, healT, pickT; bool cooking; double cookT; ushort lastButtons;
+        CharacterController cc; float vy, fireCd, bloom, reloadT, healT, pickT, punchArm; bool cooking; double cookT; ushort lastButtons;
         AgniPlayer reviveTarget; AgniPlayer lastKnocker; [System.NonSerialized] public float blindUntil; [System.NonSerialized] public float lastHurt;
         [System.NonSerialized] public AgniCharacterView view;
 
@@ -106,7 +106,7 @@ namespace Agni.Net
 
             // --- move
             float speed = Knocked ? CrawlSpeed : Crouched.Value ? CrouchSpeed : (inp.Has(AgniInput.Sprint) && inp.move.y > 0.5f && !fireHeld) ? SprintSpeed : RunSpeed;
-            if (Healing.Value) speed *= 0.45f; if (reviveTarget != null) speed = 0;
+            if (Healing.Value) speed *= 0.45f; if (inp.Has(AgniInput.Aim) && !Knocked) speed *= 0.6f; if (reviveTarget != null) speed = 0;
             var mv = Vector2.ClampMagnitude(inp.move, 1f);
             var wish = Quaternion.Euler(0, inp.yaw, 0) * new Vector3(mv.x, 0, mv.y) * speed;
             if (cc.isGrounded && vy < 0) vy = -2f; vy -= Gravity * dt;
@@ -117,8 +117,10 @@ namespace Agni.Net
             if (Healing.Value)
             {
                 healT -= dt; if (fireHeld || !Alive) { Healing.Value = false; }
-                else if (healT <= 0) { Healing.Value = false; Hp.Value = Mathf.Min(MaxHp, Hp.Value + HealAmount); Medkits.Value--; }
+                else if (healT <= 0) { Healing.Value = false; FinishHeal(); }
             }
+            // --- Josh Drink: slow regen
+            if (Boost.Value > 0 && Alive) { float add = Mathf.Min(Boost.Value, 3.5f * dt); Boost.Value -= add; Hp.Value = Mathf.Min(MaxHp, Hp.Value + add); }
             // --- knocked: bleed out
             if (Knocked)
             {
@@ -128,26 +130,45 @@ namespace Agni.Net
             }
             // --- gun / throwable
             fireCd -= dt; bloom = Mathf.Max(0, bloom - dt * 2.2f);
-            if (Reloading.Value) { reloadT -= dt; if (reloadT <= 0) { int need = MagSize - Ammo.Value, take = Mathf.Min(need, Reserve.Value); Ammo.Value += take; Reserve.Value -= take; Reloading.Value = false; } }
+            if (Reloading.Value) { reloadT -= dt; if (reloadT <= 0) FinishReload(); }
             if (Slot.Value == 0)
             {
                 if (fireHeld && !Healing.Value && !Reloading.Value && fireCd <= 0)
                 {
-                    if (Ammo.Value > 0) FireGun(inp); else if (Reserve.Value > 0) ServerReload();
+                    if (!HasGunInHand) Punch(inp);
+                    else if (Ammo.Value > 0) FireGun(inp); else if (Reserve.Value > 0) ServerReload();
                 }
             }
             else ThrowLogic(inp, fireHeld);
             // --- revive a knocked teammate (hold interact)
             ReviveLogic(inp, dt);
             // --- loot
-            pickT -= dt; if (pickT <= 0) { pickT = 0.2f; AgniPickup.ServerTryPick(this); }
+            pickT -= dt; if (pickT <= 0) { pickT = 0.25f; ServerAutoPick(); }
             lastButtons = inp.buttons;
         }
 
         public void ServerJump() { if (!Alive || Crouched.Value || !cc.isGrounded) return; vy = JumpV; JumpFxRpc(); }
         public void ServerCrouch() { if (!Alive) return; Crouched.Value = !Crouched.Value; cc.height = Crouched.Value ? 1.2f : 1.8f; cc.center = Vector3.up * cc.height * 0.5f; }
-        public void ServerReload() { if (!Alive || Reloading.Value || Ammo.Value >= MagSize || Reserve.Value <= 0) return; Reloading.Value = true; reloadT = 2.2f; ReloadFxRpc(); }
-        public void ServerHeal() { if (!Alive || Healing.Value || Medkits.Value == 0 || Hp.Value >= MaxHp) return; Healing.Value = true; healT = HealTime; }
+        public void ServerReload()
+        {
+            if (!Alive || Reloading.Value || !HasGunInHand || Ammo.Value >= CurMagSize() || Reserve.Value <= 0) return;
+            Reloading.Value = true; reloadT = AgniItems.Gun(Held).reload; ReloadFxRpc();
+        }
+        void FinishReload()
+        {
+            Reloading.Value = false; if (!HasGunInHand) return; var v = Inv.Value; var am = AgniItems.Gun(Held).ammo;
+            int need = CurMagSize() - Ammo.Value, take = Mathf.Min(need, v.AmmoOf(am)); Ammo.Value += take; v.SetAmmo(am, v.AmmoOf(am) - take); Inv.Value = v; Reserve.Value = v.AmmoOf(am);
+        }
+        void Punch(AgniInput inp)
+        {   // empty hands (classic start): a quick jab, 1.7 m reach
+            fireCd = 0.45f; var eye = Eye; var dir = Quaternion.Euler(Mathf.Clamp(inp.pitch, -30, 30), inp.yaw, 0) * Vector3.forward;
+            foreach (var h in Physics.SphereCastAll(eye, 0.28f, dir, 1.6f, ~0, QueryTriggerInteraction.Collide))
+            {
+                var pl = h.collider.GetComponentInParent<AgniPlayer>(); if (pl == null || pl == this) continue;
+                pl.ApplyDamage(16f, this, "MUKKA", false, transform.position); break;
+            }
+            PunchFxRpc();
+        }
         public void ServerSlot(byte s) { if (s > 1) return; if (s == 1 && Count((ThrowKind)Sel.Value) == 0) { var k = FirstOwned(); if (k == ThrowKind.None) return; Sel.Value = (byte)k; } CancelCook(); Slot.Value = s; }
         public void ServerSelect(ThrowKind k) { if (k == ThrowKind.None || Count(k) == 0) return; CancelCook(); Sel.Value = (byte)k; Slot.Value = 1; }
         public ThrowKind FirstOwned() { foreach (var k in ThrowMath.All) if (Count(k) > 0) return k; return ThrowKind.None; }
@@ -159,32 +180,40 @@ namespace Agni.Net
 
         void FireGun(AgniInput inp)
         {
-            Ammo.Value--; fireCd = 0.11f;
-            var eye = Eye; var dir = (inp.aim - eye); if (dir.sqrMagnitude < 0.01f) dir = Quaternion.Euler(inp.pitch, inp.yaw, 0) * Vector3.forward; dir.Normalize();
+            var g = AgniItems.Gun(Held); var v = Inv.Value; int act = v.act;
+            bool muzzle = v.Att(act, ItemCat.Muzzle) != ItemId.None, stock = v.Att(act, ItemCat.Stock) != ItemId.None, aiming = inp.Has(AgniInput.Aim);
+            Ammo.Value--; fireCd = g.interval;
+            var eye = Eye; var baseDir = (inp.aim - eye); if (baseDir.sqrMagnitude < 0.01f) baseDir = Quaternion.Euler(inp.pitch, inp.yaw, 0) * Vector3.forward; baseDir.Normalize();
             float moving = Mathf.Clamp01(new Vector2(inp.move.x, inp.move.y).magnitude);
-            float spread = (0.55f + moving * 1.3f + bloom) * (Crouched.Value ? 0.65f : 1f) * (IsBot.Value && brain != null ? brain.SpreadMul : 1f);
+            float spread = (g.spread + moving * 1.3f * (stock ? 0.7f : 1f) + bloom) * (Crouched.Value ? 0.65f : 1f) * (aiming ? 0.45f : 1f) * (IsBot.Value && brain != null ? brain.SpreadMul : 1f);
+            if (g.id == ItemId.Shikari && !aiming) spread += 1.6f;           // a bolt rifle from the hip is a guess
             if (Time.time < blindUntil) spread += 6f;
-            dir = Quaternion.AngleAxis(Random.Range(-spread, spread), Vector3.up) * Quaternion.AngleAxis(Random.Range(-spread, spread) * 0.7f, Vector3.Cross(dir, Vector3.up)) * dir;
-            bloom = Mathf.Min(2.4f, bloom + 0.28f);
-            var hits = Physics.RaycastAll(eye, dir, 320f, ~0, QueryTriggerInteraction.Collide);
-            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-            Vector3 end = eye + dir * 320f; HitKind hk = HitKind.None;
-            foreach (var h in hits)
+            bloom = Mathf.Min(2.4f, bloom + (g.pellets > 1 ? 0.6f : 0.28f) * (muzzle ? 0.7f : 1f));
+            for (int pi = 0; pi < g.pellets; pi++)
             {
-                if (h.collider.transform.IsChildOf(transform)) continue;
-                var pl = h.collider.GetComponentInParent<AgniPlayer>();
-                if (h.collider.isTrigger && (pl == null || h.collider.name != "Head")) continue;
-                end = h.point;
-                if (pl != null)
+                float sp = g.pellets > 1 ? g.spread * (aiming ? 0.8f : 1f) : spread;
+                var dir = Quaternion.AngleAxis(Random.Range(-sp, sp), Vector3.up) * Quaternion.AngleAxis(Random.Range(-sp, sp) * 0.7f, Vector3.Cross(baseDir, Vector3.up)) * baseDir;
+                var hits = Physics.RaycastAll(eye, dir, g.range, ~0, QueryTriggerInteraction.Collide);
+                System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                Vector3 end = eye + dir * g.range; HitKind hk = HitKind.None;
+                foreach (var h in hits)
                 {
-                    bool head = h.collider.name == "Head"; hk = head ? HitKind.Head : HitKind.Body;
-                    float dmg = 34f * (head ? 1.75f : 1f) * Mathf.Lerp(1f, 0.6f, Mathf.InverseLerp(50f, 150f, h.distance));
-                    pl.ApplyDamage(dmg, this, "AGNI-47", head, transform.position);
+                    if (h.collider.transform.IsChildOf(transform)) continue;
+                    var pl = h.collider.GetComponentInParent<AgniPlayer>();
+                    if (h.collider.isTrigger && (pl == null || h.collider.name != "Head")) continue;
+                    if (pl != null && pl.Dead) continue;
+                    end = h.point;
+                    if (pl != null)
+                    {
+                        bool head = h.collider.name == "Head"; hk = head ? HitKind.Head : HitKind.Body;
+                        float dmg = g.dmg * (head ? g.headMul : 1f) * Mathf.Lerp(1f, 0.55f, Mathf.InverseLerp(g.fall0, g.fall1, h.distance));
+                        pl.ApplyDamage(dmg, this, g.name, head, transform.position);
+                    }
+                    else { var w = h.collider.GetComponentInParent<AgniWall>(); if (w != null) { hk = HitKind.Wall; w.ServerDamage(g.dmg); } else hk = HitKind.World; }
+                    break;
                 }
-                else { var w = h.collider.GetComponentInParent<AgniWall>(); if (w != null) { hk = HitKind.Wall; w.ServerDamage(34f); } else hk = HitKind.World; }
-                break;
+                if (pi < 3) ShotFxRpc(eye + dir * 0.6f, end, (byte)hk);
             }
-            ShotFxRpc(eye + dir * 0.6f, end, (byte)hk);
         }
 
         void ThrowLogic(AgniInput inp, bool held)
@@ -240,6 +269,7 @@ namespace Agni.Net
             if (by != null && by != this) { by.HitConfirmRpc(dmg, head, false); if (brain != null) brain.OnHurt(by); }
             HurtRpc(from, dmg);
             if (Knocked) { Knock.Value -= dmg; if (Knock.Value <= 0) Die(by ?? lastKnocker, weapon); return; }
+            dmg = ArmourCut(dmg, head);
             Hp.Value -= dmg; Healing.Value = false;
             if (Hp.Value > 0) return;
             Hp.Value = 0;
@@ -252,13 +282,14 @@ namespace Agni.Net
             if (Dead) return;
             Life.Value = (byte)LifeState.Dead; Hp.Value = 0; Knock.Value = 0; Healing.Value = false; CancelCook();
             if (by != null && by != this && by.Team.Value != Team.Value) { by.Kills.Value++; by.HitConfirmRpc(0, false, true); }
+            ServerDeathCrate();
             var m = AgniMatch.Instance; if (m != null) { m.Feed(by != null ? by.Nick : "Agni Rekha", Nick, weapon, 0); m.OnDeath(this); }
             cc.enabled = false; // corpse does not block
         }
         public void ServerResetForMatch(Vector3 pos, float yaw)
         {
             cc.enabled = false; transform.SetPositionAndRotation(pos, Quaternion.Euler(0, yaw, 0)); cc.enabled = true; vy = 0;
-            Life.Value = (byte)LifeState.Alive; Hp.Value = MaxHp; Knock.Value = KnockMax; Ammo.Value = MagSize; Reserve.Value = 90;
+            Life.Value = (byte)LifeState.Alive; Hp.Value = MaxHp; Knock.Value = KnockMax; ServerResetInventory();
             Crouched.Value = false; cc.height = 1.8f; cc.center = Vector3.up * 0.9f; Reloading.Value = false; Healing.Value = false; Slot.Value = 0; CookStart.Value = -1;
             input.yaw = yaw; input.pitch = 0; input.move = Vector2.zero; input.buttons = 0; input.aim = pos + Quaternion.Euler(0, yaw, 0) * Vector3.forward * 50f + Vector3.up * 1.5f;
             if (!IsBot.Value) TeleportedRpc(yaw);
@@ -273,7 +304,9 @@ namespace Agni.Net
         [Rpc(SendTo.Owner)] public void HitConfirmRpc(float dmg, bool head, bool knockOrKill) { if (this == Local) AgniLocalPlayer.Instance?.OnHitConfirm(dmg, head, knockOrKill); }
         [Rpc(SendTo.Owner)] public void HurtRpc(Vector3 from, float dmg) { if (this == Local) AgniLocalPlayer.Instance?.OnHurt(from, dmg); }
         [Rpc(SendTo.Owner)] public void FlashedRpc(float intensity, float seconds) { if (this == Local) AgniLocalPlayer.Instance?.OnFlashed(intensity, seconds); }
-        [Rpc(SendTo.Owner)] public void PickedRpc(byte kind, byte amount) { if (this == Local) AgniLocalPlayer.Instance?.OnPicked((LootKind)kind, amount); }
-        [Rpc(SendTo.Owner)] void TeleportedRpc(float yaw) { if (this == Local) AgniLocalPlayer.Instance?.OnTeleported(yaw); }
+        [Rpc(SendTo.Owner)] public void PickedRpc(byte kind, ushort amount) { if (this == Local) AgniLocalPlayer.Instance?.OnPicked((ItemId)kind, amount); }
+        [Rpc(SendTo.Owner)] public void PickFailRpc(byte kind) { if (this == Local) AgniLocalPlayer.Instance?.OnPickFail((ItemId)kind); }
+        [Rpc(SendTo.ClientsAndHost, Delivery = RpcDelivery.Unreliable)] void PunchFxRpc() { if (view != null) view.PlayPunch(); }
+        [Rpc(SendTo.Owner)] public void TeleportedRpc(float yaw) { if (this == Local) AgniLocalPlayer.Instance?.OnTeleported(yaw); }
     }
 }
