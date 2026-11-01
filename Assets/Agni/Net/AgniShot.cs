@@ -2,6 +2,7 @@
 // Active only with "-agniShot <dir>". Modes (-agniShotMode):
 //   friends : Lobby scene — DOST panel, invite, requests, add-by-ID, room code, filled squad slots
 //   grenade : AgniArena (offline host) — Gola arc + cook, explosion, Dhuan smoke, Patakha flash, Agni Deewar
+//   ugs     : 2-process REAL online test (UGS sign-in, room code via Lobby, friend request, Relay match)
 //   net     : 2-process host/client test (-agniHost / -agniClient <ip>), each side screenshots + logs what it sees
 using System.Collections;
 using System.Collections.Generic;
@@ -34,6 +35,7 @@ namespace Agni.Net
             StartCoroutine(Watchdog(limit));
             if (mode == "friends") yield return Friends();
             else if (mode == "net") yield return NetTest();
+            else if (mode == "ugs") yield return UgsTest();
             else yield return Grenade();
             Log("done"); Quit(0);
         }
@@ -214,6 +216,73 @@ namespace Agni.Net
             Log(tagName + " zone r=" + (AgniZone.Instance != null ? AgniZone.Instance.RadiusNow().ToString("0.0") : "-") + " rtt=" + AgniNet.Ping());
             yield return new WaitForSecondsRealtime(0.5f); yield return Shot(tagName + "_d");
             if (AgniNet.Role == NetRole.Host) yield return new WaitForSecondsRealtime(4f); // let the client finish first
+        }
+
+
+        // ------------------------------------------------------------------ ugs (REAL online: Auth + Friends + Lobby/Relay)
+        // Two separate copies: -agniUgsRole host|join, -agniCodeFile <path> (the host writes the room code there; the joiner
+        // writes its friend ID to <path>.join). Different -agniProfile per copy = two different anonymous UGS players.
+        IEnumerator UgsTest()
+        {
+            string role = AgniNetConfig.Arg("-agniUgsRole") ?? "host"; string codeFile = AgniNetConfig.Arg("-agniCodeFile") ?? "/tmp/agni_ugs_code.txt";
+            AgniProfile.Name = AgniNetConfig.Arg("-agniName") ?? (role == "host" ? "SujonHost" : "RaniJoin");
+            AgniLobby lobby = null; float t0 = Time.realtimeSinceStartup;
+            while ((lobby = FindAnyObjectByType<AgniLobby>()) == null && Time.realtimeSinceStartup - t0 < 60) yield return null;
+            t0 = Time.realtimeSinceStartup;
+            while (AgniOnline.State != OnlineState.Online && AgniOnline.State != OnlineState.Failed && AgniOnline.State != OnlineState.NoProject && Time.realtimeSinceStartup - t0 < 45) yield return null;
+            Log(role + " online=" + AgniOnline.State + " player=" + AgniOnline.PlayerId + " friendId=" + AgniOnline.FriendCode + " err=" + AgniOnline.Error + " backend=" + AgniSocial.Friends.Backend);
+            if (AgniOnline.State != OnlineState.Online) { yield return Shot("ugs_" + role + "_offline"); yield break; }
+            yield return new WaitForSecondsRealtime(2f);
+            var party = AgniSocial.Party;
+            if (role == "host")
+            {
+                if (File.Exists(codeFile)) File.Delete(codeFile); if (File.Exists(codeFile + ".join")) File.Delete(codeFile + ".join");
+                party.Create(); t0 = Time.realtimeSinceStartup;
+                while ((!party.InParty || string.IsNullOrEmpty(party.Code)) && Time.realtimeSinceStartup - t0 < 40) yield return null;
+                Log("host room code=" + party.Code + " status=" + party.Status + " netRole=" + AgniNet.Role);
+                if (!party.InParty) { yield return Shot("ugs_host_noroom"); yield break; }
+                File.WriteAllText(codeFile, party.Code);
+                var panel = lobby.OpenFriends(AgniFriendsPanel.Tab.Room); yield return new WaitForSecondsRealtime(1.5f); yield return Shot("ugs_host_1_room");
+                t0 = Time.realtimeSinceStartup; while (party.Members.Count < 2 && Time.realtimeSinceStartup - t0 < 90) yield return null;
+                Log("host members=" + party.Members.Count + " : " + string.Join(", ", System.Linq.Enumerable.Select(party.Members, m => m.name + (m.leader ? "(leader)" : "") + (m.ready ? "[R]" : ""))));
+                // friend request to the joiner, by its real UGS friend ID
+                t0 = Time.realtimeSinceStartup; while (!File.Exists(codeFile + ".join") && Time.realtimeSinceStartup - t0 < 40) yield return null;
+                if (File.Exists(codeFile + ".join")) { var fid = File.ReadAllText(codeFile + ".join").Trim(); var e = AgniSocial.Friends.SendRequest(fid); Log("host friend request -> " + fid + " : " + (e ?? "sent")); panel.Toast(e ?? "Request bheji: " + fid); }
+                yield return new WaitForSecondsRealtime(1.5f); yield return Shot("ugs_host_2_squad_request");
+                t0 = Time.realtimeSinceStartup; while (Time.realtimeSinceStartup - t0 < 40) { bool ok = AgniSocial.Friends.Friends.Count > 0; foreach (var m in party.Members) if (!m.leader && !m.ready) ok = false; if (ok && party.Members.Count >= 2) break; yield return null; }
+                Log("host friends=" + AgniSocial.Friends.Friends.Count + (AgniSocial.Friends.Friends.Count > 0 ? " first=" + AgniSocial.Friends.Friends[0].name + " " + AgniSocial.Friends.Friends[0].presence : "") + " allReady=" + party.AllReady);
+                panel.Show(AgniFriendsPanel.Tab.Dost); yield return new WaitForSecondsRealtime(1.5f); yield return Shot("ugs_host_3_friend_online");
+                panel.Close(); yield return new WaitForSecondsRealtime(0.8f); yield return Shot("ugs_host_4_lobby_ready");
+                party.StartMatch(); Log("host START status=" + party.Status);
+            }
+            else
+            {
+                t0 = Time.realtimeSinceStartup; while (!File.Exists(codeFile) && Time.realtimeSinceStartup - t0 < 90) yield return null;
+                var code = File.Exists(codeFile) ? File.ReadAllText(codeFile).Trim() : ""; Log("join code=" + code);
+                var panel = lobby.OpenFriends(AgniFriendsPanel.Tab.Room);
+                party.JoinByCode(code); t0 = Time.realtimeSinceStartup;
+                while ((!party.InParty || party.Members.Count < 2) && Time.realtimeSinceStartup - t0 < 40) yield return null;
+                Log("join inParty=" + party.InParty + " members=" + party.Members.Count + " status=" + party.Status + " netRole=" + AgniNet.Role + " connected=" + (AgniNet.NM != null && AgniNet.NM.IsConnectedClient));
+                yield return new WaitForSecondsRealtime(1.5f); yield return Shot("ugs_join_1_in_squad");
+                File.WriteAllText(codeFile + ".join", AgniOnline.FriendCode);
+                t0 = Time.realtimeSinceStartup; while (AgniSocial.Friends.Requests.Count == 0 && Time.realtimeSinceStartup - t0 < 40) yield return null;
+                panel.Show(AgniFriendsPanel.Tab.Requests); yield return new WaitForSecondsRealtime(1.2f); yield return Shot("ugs_join_2_request");
+                FriendRequest req = null; foreach (var q in AgniSocial.Friends.Requests) if (q.incoming) req = q;
+                Log("join requests=" + AgniSocial.Friends.Requests.Count + (req != null ? " from " + req.name : ""));
+                if (req != null) AgniSocial.Friends.Accept(req.playerId);
+                yield return new WaitForSecondsRealtime(3f);
+                party.SetReady(true); panel.Show(AgniFriendsPanel.Tab.Dost); yield return new WaitForSecondsRealtime(1.5f); yield return Shot("ugs_join_3_friends");
+                panel.Close();
+            }
+            // both: the leader's START takes the squad into the arena over Relay
+            yield return WaitPlaying(1.5f);
+            var lp = AgniLocalPlayer.Instance; if (lp == null) { Log(role + " never reached the match"); yield return Shot("ugs_" + role + "_nomatch"); yield break; }
+            var me = lp.P; AgniPlayer other = null; foreach (var p in AgniPlayer.All) if (p != me && !p.IsBot.Value) other = p;
+            int humans = 0; foreach (var p in AgniPlayer.All) if (!p.IsBot.Value) humans++;
+            Log(role + " MATCH over relay: netRole=" + AgniNet.Role + " me=" + me.Nick + " team=" + me.Team.Value + " players=" + AgniPlayer.All.Count + " humans=" + humans + " rtt=" + AgniNet.Ping() + (other != null ? " mate=" + other.Nick + " team=" + other.Team.Value + " d=" + Vector3.Distance(other.transform.position, me.transform.position).ToString("0.0") : ""));
+            if (other != null) Face(other.transform.position, 3);
+            yield return new WaitForSecondsRealtime(1.0f); yield return Shot("ugs_" + role + "_5_match");
+            yield return new WaitForSecondsRealtime(role == "host" ? 6f : 2f);
         }
 
         // ------------------------------------------------------------------ capture

@@ -1,4 +1,8 @@
-# Agni Royale — turning on REAL online (Unity Gaming Services, free tier)
+# Agni Royale — REAL online (Unity Gaming Services, free tier)
+
+STATUS 2026-11-01: DONE. This project is already linked to Unity Cloud project "Agni Royale"
+(Project ID 6ecadd88-8e82-413a-8647-a273a5aded4d, org zyqorstudiomvxacdq8, environment production) with Authentication,
+Friends, Lobby and Relay on. The steps below are only needed to move the game to a different Unity account.
 
 The game already contains the online code (friends by Name#1234, requests, presence, squad invites, room codes over
 Lobby + Relay). It stays in demo/LAN mode until the project is linked to a Unity Cloud project. One-time steps:

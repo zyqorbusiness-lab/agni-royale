@@ -268,7 +268,7 @@ namespace Agni.Social
             busy = true; status = "Room " + code + " se jud rahe hain…"; Changed?.Invoke();
             try
             {
-                var opt = new JoinSessionOptions { PlayerProperties = MyProps(false) }.WithNetworkHandler(new AgniRelayHandler());
+                var opt = new JoinSessionOptions { PlayerProperties = MyProps(false) }.WithNetworkHandler(new AgniRelayHandler(code));
                 session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code, opt);
                 Hook(); status = "Squad me aa gaye!";
             }
@@ -331,13 +331,15 @@ namespace Agni.Social
     /// Connects NGO through UGS Relay with OUR NetworkManager + approval payload (instead of the package's default handler).
     public class AgniRelayHandler : INetworkHandler
     {
+        readonly string code; // joiners know the room code before the session object exists; the server groups squads by it
+        public AgniRelayHandler(string roomCode = null) { code = roomCode; }
         public Task StartAsync(NetworkConfiguration c) => StartAsync(c, default);
         public Task StartAsync(NetworkConfiguration c, System.Threading.CancellationToken ct)
         {
             if (c.Type != NetworkType.Relay) throw new Exception("Agni: only Relay networking is wired for online squads");
             bool host = c.Role != NetworkRole.Client;
-            var data = host ? c.RelayServerData : c.RelayClientData;
-            if (!AgniNet.StartRelay(host, data, AgniSocial.Party.Code)) throw new Exception("NGO start failed");
+            var data = c.RelayServerData; // the SDK hands NGO clients their join data here too (RelayClientData is only filled for Netcode for Entities)
+            if (!AgniNet.StartRelay(host, data, string.IsNullOrEmpty(code) ? AgniSocial.Party.Code : code)) throw new Exception("NGO start failed");
             return Task.CompletedTask;
         }
         public Task StopAsync() { AgniNet.Shutdown(); return Task.CompletedTask; }

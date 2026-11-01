@@ -254,6 +254,7 @@ namespace Agni.Net.EditorTools
             Directory.CreateDirectory(outDir);
             var scenes = NetScenes();
             if (AgniNetConfig.Has("-arenaFirst")) scenes = scenes.Where(s => s == ArenaPath).Concat(scenes.Where(s => s != ArenaPath)).ToArray(); // automated net tests boot straight into the arena
+            else if (AgniNetConfig.Has("-lobbyFirst")) scenes = scenes.Where(s => s.EndsWith("/Lobby.unity")).Concat(scenes.Where(s => !s.EndsWith("/Lobby.unity"))).ToArray(); // online (UGS) tests start in the Mahal lobby
             var opts = new BuildPlayerOptions { scenes = scenes, locationPathName = Path.Combine(outDir, server ? "AgniRoyaleServer.x86_64" : "AgniRoyale.x86_64"), target = BuildTarget.StandaloneLinux64, targetGroup = BuildTargetGroup.Standalone, options = BuildOptions.None };
                         if (server)
             {
