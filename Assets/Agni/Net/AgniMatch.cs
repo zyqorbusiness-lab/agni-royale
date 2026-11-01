@@ -134,6 +134,7 @@ namespace Agni.Net
                 }
             }
             AgniLoot.ServerSpawnAll(NetworkManager.ServerTime.Time);
+            AgniVehicles.ServerSpawnAll(); // the 7 Blender vehicles near villages/landmarks, boats on the water
             Phase.Value = (byte)MatchPhase.Playing; Recount();
             AgniZone.Instance?.ServerBegin();
             Debug.Log("[AgniMatch] GO: " + total + " players in " + teams.Count + " squads (" + humans.Count + " human)");

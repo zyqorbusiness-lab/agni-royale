@@ -119,6 +119,7 @@ namespace Agni.Net
                 if (kb.fKey.wasPressedThisFrame && LootHud != null) LootHud.PickFirst();
                 if (kb.tabKey.wasPressedThisFrame && LootHud != null) LootHud.ToggleBag();
                 if (kb.vKey.wasPressedThisFrame) aimToggle = !aimToggle;
+                if (kb.bKey.wasPressedThisFrame) P.VehicleRpc(); // get in / out of the nearest vehicle
                 interactHeld = kb.eKey.isPressed || (Hud != null && Hud.ReviveHeld);
                 if (kb.escapeKey.wasPressedThisFrame) Cursor.lockState = CursorLockMode.None;
             }
@@ -147,15 +148,18 @@ namespace Agni.Net
             }
             float height = target.Knocked ? 0.9f : target.Crouched.Value ? 1.25f : 1.6f;
             var basePos = target == P ? ViewPos : target.transform.position;
+            var rideV = target.InVehicle ? target.Vehicle : null; // in a vehicle: orbit the vehicle, a little higher and further back
+            if (rideV != null) { basePos = rideV.transform.position; height = rideV.kind == VKind.Bike ? 1.7f : rideV.kind == VKind.Monster ? 3.2f : 2.2f; }
             var pivot = basePos + Vector3.up * height;
             var rot = Quaternion.Euler(Pitch, Yaw, 0);
             zoomNow = Mathf.MoveTowards(zoomNow, target == P ? Zoom : 1f, Time.deltaTime * 14f * Mathf.Max(1f, zoomNow));
             Cam.fieldOfView = 62f / zoomNow;
             float dist = zoomNow > 1.05f ? Mathf.Lerp(camDist, 1.15f, Mathf.Clamp01((zoomNow - 1f) * 2f)) : camDist;
+            if (rideV != null && zoomNow <= 1.05f) dist = rideV.kind == VKind.Monster ? 9.5f : rideV.kind == VKind.Bike ? 4.6f : 6.8f;
             var want = pivot + rot * new Vector3(zoomNow > 1.05f ? 0.45f : 0.62f, 0.12f, -dist);
             // keep the camera out of walls
             var dir = want - pivot; float len = dir.magnitude;
-            foreach (var h in SortedCast(pivot, dir / len, len)) { if (h.collider.transform.IsChildOf(target.transform) || h.collider.transform.IsChildOf(transform)) continue; want = pivot + dir / len * Mathf.Max(0.3f, h.distance - 0.1f); break; }
+            foreach (var h in SortedCast(pivot, dir / len, len)) { if (h.collider.transform.IsChildOf(target.transform) || h.collider.transform.IsChildOf(transform) || (rideV != null && h.collider.transform.IsChildOf(rideV.transform))) continue; want = pivot + dir / len * Mathf.Max(0.3f, h.distance - 0.1f); break; }
             Cam.transform.SetPositionAndRotation(want, rot);
             // shake (trauma²)
             if (AgniCamRig.Trauma > 0)
@@ -213,7 +217,7 @@ namespace Agni.Net
         void Predict(float dt)
         {
             if (ghost == null) return;
-            if (!ghostInit || P.Dead) { SnapGhost(); return; }
+            if (!ghostInit || P.Dead || P.InVehicle) { SnapGhost(); return; }
             var inp = lastSent; inp.move = script.on ? script.move : stick; inp.yaw = Yaw;
             bool fire = script.on ? script.fire : fireHeld; bool sprint = sprintHeld;
             var m = AgniMatch.Instance; if (m != null && m.Phase.Value == (byte)MatchPhase.Ended) inp.move = Vector2.zero;

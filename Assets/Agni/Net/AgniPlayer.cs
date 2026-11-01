@@ -97,21 +97,25 @@ namespace Agni.Net
         void ServerTick(float dt)
         {
             if (IsBot.Value && brain != null) input = brain.Think(this, dt);
-            if (Dead) return;
+            if (Dead) { if (Seat.Value >= 0) ServerExitVehicle(); return; }
             var m = AgniMatch.Instance; bool frozen = m != null && m.Phase.Value == (byte)MatchPhase.Ended;
             var inp = input; if (frozen) { inp.move = Vector2.zero; inp.buttons = 0; }
             transform.rotation = Quaternion.Euler(0, inp.yaw, 0);
             if (Mathf.Abs(Mathf.DeltaAngle(Pitch.Value, inp.pitch)) > 1f) Pitch.Value = inp.pitch;
             bool fireHeld = inp.Has(AgniInput.Fire);
+            bool riding = ServerRide(dt); if (riding && Seat.Value == 0) fireHeld = false; // the driver drives, passengers may shoot
 
             // --- move
             float speed = Knocked ? CrawlSpeed : Crouched.Value ? CrouchSpeed : (inp.Has(AgniInput.Sprint) && inp.move.y > 0.5f && !fireHeld) ? SprintSpeed : RunSpeed;
             if (Healing.Value) speed *= 0.45f; if (inp.Has(AgniInput.Aim) && !Knocked) speed *= 0.6f; if (reviveTarget != null) speed = 0;
             var mv = Vector2.ClampMagnitude(inp.move, 1f);
             var wish = Quaternion.Euler(0, inp.yaw, 0) * new Vector3(mv.x, 0, mv.y) * speed;
-            if (cc.isGrounded && vy < 0) vy = -2f; vy -= Gravity * dt;
-            cc.Move((wish + Vector3.up * vy) * dt);
-            if (transform.position.y < -40f) { cc.enabled = false; transform.position = AgniMatch.SafeSpot(transform.position); cc.enabled = true; vy = 0; }
+            if (!riding)
+            {
+                if (cc.isGrounded && vy < 0) vy = -2f; vy -= Gravity * dt;
+                cc.Move((wish + Vector3.up * vy) * dt);
+                if (transform.position.y < -40f) { cc.enabled = false; transform.position = AgniMatch.SafeSpot(transform.position); cc.enabled = true; vy = 0; }
+            }
 
             // --- heal
             if (Healing.Value)
@@ -143,7 +147,7 @@ namespace Agni.Net
             // --- revive a knocked teammate (hold interact)
             ReviveLogic(inp, dt);
             // --- loot
-            pickT -= dt; if (pickT <= 0) { pickT = 0.25f; ServerAutoPick(); }
+            pickT -= dt; if (pickT <= 0 && !riding) { pickT = 0.25f; ServerAutoPick(); }
             lastButtons = inp.buttons;
         }
 

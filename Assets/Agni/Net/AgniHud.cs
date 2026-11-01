@@ -15,7 +15,7 @@ namespace Agni.Net
         AgniLocalPlayer lp; AgniPlayer P => lp.P; Canvas canvas; RectTransform safe;
         Text alive, kills, zone, net, center, ammo, hpText, toast, endTitle, endSub, cookTxt, throwCount, reviveTxt;
         Image hpFill, knockFill, flash, cookRing, throwIcon, slotGunBg, slotThrowBg, hurtArc, reviveFill, healFill, hit;
-        RectTransform feed, map, mapZone, mapNext, mapMe, stickBase, stickKnob, squadList; GameObject reviveBtn, endPanel, healBtn, knockPanel, cancelBtn; Text healCount;
+        RectTransform feed, map, mapZone, mapNext, mapMe, stickBase, stickKnob, squadList; GameObject reviveBtn, endPanel, healBtn, knockPanel, cancelBtn, gaadiBtn; Text healCount, gaadiTxt, speedTxt;
         readonly List<(Text t, float at)> feedLines = new List<(Text, float)>(); readonly List<RectTransform> mapDots = new List<RectTransform>();
         float toastUntil, hitUntil, hurtUntil; public bool FireHeld => fireA.held || fireB.held; public bool ReviveHeld => revive != null && revive.held; public bool StickActive => stickZone != null && stickZone.active;
         Hold fireA, fireB, revive; StickZone stickZone;
@@ -82,6 +82,8 @@ namespace Agni.Net
             Act(s, "Reload", "RELOAD", new Vector2(-430, 420), 120, () => P.ReloadRpc());
             healBtn = Act(s, "Heal", "PATTI", new Vector2(-700, 140), 120, () => P.HealRpc()).gameObject; healCount = K.Txt(healBtn.transform, "N", "", 26, Pal.Gold, TextAnchor.LowerRight, true); healCount.rectTransform.Fill(0, 6, 14, 0);
             cancelBtn = Act(s, "CancelThrow", "RADD", new Vector2(-250, 470), 110, () => P.SlotRpc(0)).gameObject;
+            var gb = Act(s, "Gaadi", "BAITHO", new Vector2(-700, 320), 130, () => P.VehicleRpc()); gaadiBtn = gb.gameObject; gaadiTxt = gb.transform.Find("L").GetComponent<Text>(); gaadiBtn.SetActive(false);
+            speedTxt = K.Txt(s, "Speed", "", 46, Color.white, TextAnchor.MiddleCenter, true); speedTxt.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 175), new Vector2(520, 70)); speedTxt.Outline(new Color(0, 0, 0, 0.6f), 3);
             revive = HoldBtn(s, "Revive", new Vector2(0.5f, 0), new Vector2(0, 260), 170, new Color(0.2f, 0.55f, 0.35f, 0.92f), "UTHAO"); reviveBtn = revive.gameObject;
             reviveFill = K.Img(reviveBtn.transform, "Prog", "ring", new Color(0.6f, 1f, 0.6f)); reviveFill.rectTransform.Fill(-8, -8, -8, -8); reviveFill.type = Image.Type.Filled; reviveFill.fillMethod = Image.FillMethod.Radial360;
 
@@ -146,6 +148,10 @@ namespace Agni.Net
             hpText.text = P.Knocked ? "" : Mathf.CeilToInt(P.Hp.Value) + " / " + (int)AgniPlayer.MaxHp; hpFill.color = P.Hp.Value < 60 ? new Color(1f, 0.6f, 0.5f) : new Color(0.95f, 0.95f, 0.92f);
             healFill.enabled = P.Healing.Value; if (P.Healing.Value) healFill.fillAmount = Mathf.PingPong(now, 1f);
             healCount.text = P.Medkits.Value.ToString(); healBtn.SetActive(P.Medkits.Value > 0 && P.Alive);
+            // vehicle: BAITHO near a free vehicle, UTRO while seated; the driver sees the speed
+            var nearV = P.Alive && !P.InVehicle ? AgniVehicle.Nearest(P.transform.position, AgniPlayer.EnterRange) : null;
+            gaadiBtn.SetActive(P.Alive && (P.InVehicle || (nearV != null && nearV.FreeSeat(true) >= 0))); gaadiTxt.text = P.InVehicle ? "UTRO" : "BAITHO";
+            var rv = P.Vehicle; speedTxt.text = rv != null && P.Driving ? Mathf.RoundToInt(rv.SpeedKmh) + " km/h" : "";
             // weapons
             ammo.text = (P.Reloading.Value ? "<size=30>RELOAD…</size>" : P.Ammo.Value.ToString()) + "<size=28> / " + P.Reserve.Value + "</size>";
             var k = (ThrowKind)P.Sel.Value; int cnt = P.Count(k); if (cnt == 0) { var f = P.FirstOwned(); if (f != ThrowKind.None) { k = f; cnt = P.Count(f); } }

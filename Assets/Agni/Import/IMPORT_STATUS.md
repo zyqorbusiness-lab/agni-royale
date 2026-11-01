@@ -66,3 +66,17 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - Proofs: proof/import_v1/11_india_map_top_labelled.jpg, 12_ghanta_ghar_ground_grass_trees.jpg.
 - Weak spots: from the plane the inland terrain is soft (base map); the landscape HUD in the editor proof is laid out for another screen size (shots are HUD-free);
   the terrain is built 2-3 times while the arena loads (load time on phones to check); grass is not rebuilt if GRAPHICS is changed mid-match (applies next match).
+
+## Block 2 — VEHICLES (in, networked, driven in play mode)
+- 7 Blender vehicles -> network prefabs (Assets/Agni/Import/Resources/AgniNet/Vehicles, auto-registered with the NetworkManager at start):
+  Shera Jeep (4 seats, 4WD), Phatphati bike (2), Toofan Buggy (2), Chhota Haathi pickup (4), Auto-Rickshaw (4, 3 wheels), Dhoom Monster (4, 4WD), Naav speedboat (4, buoyancy).
+  Built by Agni.Import.EditorTools.AgniImportVehicles.Batch: fixes the FBX's double axis bake on wheel/steering/motor meshes, URP materials (body paint / shared trim / lights),
+  LOD0-2, UCX hulls -> convex colliders, WheelColliders at the hub empties with the README numbers (spring, damper, torque, brakes, steer, anti-roll), seats/exits/buoys wired.
+- Server-authoritative: the server runs the physics; clients see an interpolated NetworkTransform. Driver = seat 0 (stick = gas/steer, sprint = handbrake); passengers may shoot, the driver may not;
+  knocked/dead riders are ejected at the nearest clear exit. GAADI button on the HUD (BAITHO near a free vehicle / UTRO when seated), B key on PC; driver sees km/h.
+- Skins: 3-4 colour variants per vehicle + the shared skin set (vehicle_skins.json, 41 skins) via AgniVehicleSkins; picks are stored per phone (garage UI not built yet).
+- Spawns: ~40 per match near villages/landmarks (boats on water). Last run: 7 jeep / 10 bike / 7 buggy / 4 pickup / 5 rickshaw / 1 monster / 5 boats.
+- Play-mode test (AgniShot -agniShotMode drive): enter jeep OK; gas 3.5 s -> 39 km/h, 20 m; steer right 2 s -> 41 km/h and turned 80 deg; brake 2.5 s -> 1.3 km/h; exit lands on the ground beside it, seat freed.
+- Proofs: 13_vehicle_lineup_rann.jpg (6 land vehicles on the Rann), 14_hero_driving_jeep.jpg, 15_jeep_follow_cam.jpg, 16_naav_boat_river.jpg.
+- Weak spots: seated pose is procedural (legs bent, hands to the wheel), not an authored sit clip; no engine sound or exhaust/dust FX yet; bike balance is a code assist;
+  no vehicle damage/explosions; not tested with two real phones yet (host only in the editor).

@@ -44,6 +44,7 @@ namespace Agni.Net
             else if (mode == "ugs") yield return UgsTest();
             else if (mode == "loot") yield return Loot();
             else if (mode == "india") yield return India();
+            else if (mode == "drive") yield return Drive();
             else if (mode == "netloot") yield return NetLoot();
             else yield return Grenade();
             Log("done"); Quit(0);
@@ -220,6 +221,101 @@ namespace Agni.Net
             HudOn(false); lp.freeCam = true; var body = lp.ViewPos;
             LookFrom(body + dv * 4.2f + Vector3.up * 1.15f + Quaternion.Euler(0, ang + 90, 0) * Vector3.forward * 0.9f, gg + Vector3.up * 10f + Quaternion.Euler(0, ang + 90, 0) * Vector3.forward * 4f); lp.Cam.fieldOfView = 56; yield return Frames(4); yield return Shot("india_gg_hero_free");
             lp.freeCam = false; HudOn(true);
+        }
+
+        // ------------------------------------------------------------------ drive: vehicle lineup + the jeep driven by this player (enter, gas, steer, brake, exit)
+        static bool TreeNear(Vector3 p, float r)
+        {
+            var tiles = Agni.Import.AgniIndiaTerrain.Tiles; if (tiles == null) return false;
+            foreach (var t in tiles)
+            {
+                if (t == null) continue; var td = t.terrainData; var o = t.transform.position; var sz = td.size;
+                if (p.x < o.x - r || p.z < o.z - r || p.x > o.x + sz.x + r || p.z > o.z + sz.z + r) continue;
+                foreach (var ti in td.treeInstances) { var w = new Vector3(o.x + ti.position.x * sz.x, 0, o.z + ti.position.z * sz.z); if ((w - new Vector3(p.x, 0, p.z)).sqrMagnitude < r * r) return true; }
+            }
+            return false;
+        }
+        Vector3 OpenFlat(Vector3 near, float rMin, float rMax, float clear)
+        {
+            int nW = 0, nF = 0, nK = 0, nR = 0, nH = 0, nT = 0;
+            for (int k = 0; k < 600; k++)
+            {
+                float a = k * 2.399f, r = Mathf.Lerp(rMin, rMax, (k % 37) / 36f); var p = near + new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
+                p.y = Agni.Import.AgniIndia.H(p.x, p.z);
+                if (Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.z, clear)) { nW++; continue; }
+                if (!Agni.Import.AgniIsland.IsFlat(p.x, p.z, clear * 0.8f, 1.2f)) { nF++; continue; }
+                if (Agni.Import.AgniIsland.KitEdgeDist(p.x, p.z) < clear + 8f) { nK++; continue; }
+                if (Agni.Import.AgniIndia.RoadDist(p.x, p.z) < 4f) { nR++; continue; }
+                bool hut = false; foreach (var c in Physics.OverlapBox(p + Vector3.up * 2.6f, new Vector3(clear, 1.8f, clear), Quaternion.identity, ~0, QueryTriggerInteraction.Ignore)) if (!(c is TerrainCollider)) { hut = true; break; }
+                if (hut) { nH++; continue; }
+                if (TreeNear(p, clear + 3f)) { nT++; continue; }
+                Log("OpenFlat ok after water " + nW + " slope " + nF + " kit " + nK + " road " + nR + " hut " + nH + " tree " + nT);
+                return p;
+            }
+            Log("OpenFlat: nothing found (water " + nW + " slope " + nF + " kit " + nK + " road " + nR + " hut " + nH + " tree " + nT + ")"); return near;
+        }
+        static float vRad(string n) { foreach (var vg in AgniVillages.Villages) if (vg.name == n) return vg.r; return 60f; }
+        IEnumerator Drive()
+        {
+            yield return WaitPlaying(2.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            var counts = new int[7]; foreach (var v0 in AgniVehicle.All) if (v0 != null) counts[(int)v0.kind]++;
+            Log("vehicles spawned by the match=" + AgniVehicle.All.Count + " jeep/bike/buggy/pickup/rickshaw/monster/boat=" + string.Join("/", counts));
+            var gg = Agni.Import.AgniLandmarks.Table[0].pos;
+            // ---- lineup: the 6 land vehicles in an arc on open flat ground, noses to the camera
+            var nearName = AgniNetConfig.Arg("-agniLineupNear") ?? "Sarson Khet"; var anchor = gg;
+            foreach (var vg in AgniVillages.Villages) if (vg.name == nearName) anchor = new Vector3(vg.c.x, 0, vg.c.y);
+            var c0 = OpenFlat(anchor, vRad(nearName) + 30f, vRad(nearName) + 400f, 16f); Log("lineup at " + c0);
+            var face = (new Vector3(gg.x, 0, gg.z) - new Vector3(c0.x, 0, c0.z)).normalized; if (face.sqrMagnitude < 0.1f) face = Vector3.forward;
+            var sun = RenderSettings.sun != null ? Vector3.ProjectOnPlane(RenderSettings.sun.transform.forward, Vector3.up).normalized : Vector3.forward; if (sun.sqrMagnitude > 0.1f) face = -sun; // camera with the sun behind it
+            var row = new List<AgniVehicle>(); VKind[] lk = { VKind.Rickshaw, VKind.Bike, VKind.Jeep, VKind.Monster, VKind.Buggy, VKind.Pickup };
+            var camP = c0 + face * 3f;
+            for (int i = 0; i < lk.Length; i++)
+            {
+                float ang = Mathf.Lerp(-24f, 24f, i / (float)(lk.Length - 1)); var dir = Quaternion.Euler(0, ang, 0) * face;
+                var p = c0 + dir * (lk[i] == VKind.Monster ? 26f : 21f); p.y = Agni.Import.AgniIndia.H(p.x, p.z) + 0.6f;
+                var rot = Quaternion.LookRotation(-dir + Quaternion.Euler(0, 90, 0) * dir * 0.35f);
+                ushort skin = (ushort)(i % 2 == 0 ? 0 : 1);
+                var v = AgniVehicles.Spawn(lk[i], p, rot, skin); if (v != null) row.Add(v);
+            }
+            yield return new WaitForSecondsRealtime(3.0f);
+            foreach (var v in row) Log("parked " + v.kind + " at " + v.transform.position + " up=" + v.transform.up.y.ToString("F2") + " speed=" + v.SpeedKmh.ToString("F1"));
+            HudOn(false); lp.freeCam = true; lp.Cam.fieldOfView = 58;
+            lp.Cam.fieldOfView = 64; LookFrom(camP + Vector3.up * 4.2f, c0 + face * 21f + Vector3.up * 0.4f); yield return Frames(4); yield return Shot("veh_lineup");
+            LookFrom(c0 + face * 8f + Quaternion.Euler(0, 90, 0) * face * 5f + Vector3.up * 2.0f, c0 + face * 21f + Vector3.up * 1.0f); lp.Cam.fieldOfView = 60; yield return Frames(4); yield return Shot("veh_lineup_low");
+            lp.freeCam = false;
+            // ---- drive the jeep: walk up, BAITHO, gas, steer, brake, UTRO
+            AgniVehicle jeep = null; foreach (var v in row) if (v.kind == VKind.Jeep) jeep = v;
+            if (jeep == null) { Log("no jeep"); yield break; }
+            me.ServerTeleport(jeep.transform.position + jeep.transform.right * 2.4f, jeep.transform.eulerAngles.y); yield return new WaitForSecondsRealtime(0.8f);
+            Log("near jeep: hud button shows=" + (AgniVehicle.Nearest(me.transform.position, AgniPlayer.EnterRange) == jeep));
+            bool ok = me.ServerEnterVehicle(jeep); yield return new WaitForSecondsRealtime(0.5f);
+            Log("enter ok=" + ok + " seat=" + me.Seat.Value + " driving=" + me.Driving + " client sees vehicle=" + (me.Vehicle == jeep));
+            // drive out of the circle, away from the other vehicles
+            lp.Yaw = jeep.transform.eulerAngles.y; lp.Pitch = 10;
+            var start = jeep.transform.position; lp.script.on = true; lp.script.move = new Vector2(0, 1f);
+            yield return new WaitForSecondsRealtime(3.5f);
+            Log("gas 3.5 s: speed=" + jeep.SpeedKmh.ToString("F1") + " km/h moved=" + Vector3.Distance(start, jeep.transform.position).ToString("F1") + " m up=" + jeep.transform.up.y.ToString("F2") + " seat follows=" + Vector3.Distance(me.transform.position, AgniPlayer.SeatRoot(jeep, 0)).ToString("F2"));
+            lp.Yaw = jeep.transform.eulerAngles.y + 25f; HudOn(false); yield return Frames(3); yield return Shot("drive_follow");
+            lp.freeCam = true; var jf = jeep.transform.forward; var jr = jeep.transform.right;
+            LookFrom(jeep.transform.position + jf * 9.5f + jr * 2.6f + Vector3.up * 1.9f, jeep.transform.position + Vector3.up * 1.0f); lp.Cam.fieldOfView = 44; yield return Frames(2); yield return Shot("drive_front");
+            lp.freeCam = false; HudOn(true);
+            lp.script.move = new Vector2(0.8f, 1f); yield return new WaitForSecondsRealtime(2.0f);
+            Log("steer right 2 s: speed=" + jeep.SpeedKmh.ToString("F1") + " yaw=" + jeep.transform.eulerAngles.y.ToString("F0"));
+            lp.script.move = new Vector2(0, -1f); yield return new WaitForSecondsRealtime(2.5f);
+            Log("brake 2.5 s: speed=" + jeep.SpeedKmh.ToString("F1"));
+            lp.script.move = Vector2.zero; lp.script.on = false; yield return new WaitForSecondsRealtime(1.0f);
+            me.ServerExitVehicle(); yield return new WaitForSecondsRealtime(0.6f);
+            Log("exit: inVehicle=" + me.InVehicle + " dist to jeep=" + Vector3.Distance(me.transform.position, jeep.transform.position).ToString("F1") + " grounded y=" + me.transform.position.y.ToString("F2") + " ground=" + Agni.Import.AgniIndia.H(me.transform.position.x, me.transform.position.z).ToString("F2") + " jeep seat free=" + (jeep.occupants[0] == null));
+            // ---- the boat on the Ghanta Ghar river
+            AgniVehicle boat = null; float bd = 1e9f; foreach (var v in AgniVehicle.All) if (v != null && v.IsBoat) { float d = Vector3.Distance(v.transform.position, gg); if (d < bd) { bd = d; boat = v; } }
+            if (boat != null)
+            {
+                Log("boat at " + boat.transform.position + " (" + bd.ToString("F0") + " m from GG) y=" + boat.transform.position.y.ToString("F2") + " up=" + boat.transform.up.y.ToString("F2"));
+                HudOn(false); lp.freeCam = true; var bf = boat.transform.forward; var br = boat.transform.right;
+                LookFrom(boat.transform.position + bf * 7f + br * 4.5f + Vector3.up * 2.4f, boat.transform.position + Vector3.up * 0.6f); lp.Cam.fieldOfView = 50; yield return Frames(3); yield return Shot("veh_boat");
+                lp.freeCam = false; HudOn(true);
+            }
         }
         IEnumerator Loot()
         {

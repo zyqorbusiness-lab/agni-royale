@@ -125,7 +125,7 @@ namespace Agni.Net
             if (p.Dead) { if (deathT > 0 && Time.time - deathT > 4f) model.gameObject.SetActive(false); return; }
             bool holdingThrow = p.Slot.Value == 1 || Time.time - throwT < 0.6f;
             if (shownGun != p.HeldGun.Value) AttachGun((ItemId)p.HeldGun.Value);
-            if (gun != null) gun.SetActive(!holdingThrow && !p.Knocked);
+            if (gun != null) gun.SetActive(!holdingThrow && !p.Knocked && !p.Driving);
             if (holdingThrow && rHand != null && (held == null || heldKind != (ThrowKind)p.Sel.Value) && Time.time - throwT > 0.45f)
             {
                 if (held != null) Destroy(held); heldKind = (ThrowKind)p.Sel.Value;
@@ -137,6 +137,7 @@ namespace Agni.Net
             string want;
             if (p.Knocked) want = "Prone_Crawl_InPlace";
             else if (p.Crouched.Value) want = speed > 0.4f ? "Crouch_Walk_InPlace" : "Crouch_Idle";
+            else if (p.InVehicle) want = "Rifle_Idle"; // seated: upper body idles, legs are bent into the seat in LateUpdate
             else want = speed > 6.1f ? "Sprint_InPlace" : speed > 0.5f ? "Run_Fwd_InPlace" : "Rifle_Idle";
             if (anim[want] == null) want = "Rifle_Idle";
             if (!anim.IsPlaying(want)) anim.CrossFade(want, 0.18f);
@@ -153,6 +154,7 @@ namespace Agni.Net
             }
             else if (transform.localPosition != Vector3.zero) { transform.localPosition = Vector3.zero; transform.localRotation = Quaternion.identity; }
             if (p == null || model == null || p.Dead || p.Knocked) return;
+            if (p.InVehicle) { var veh = p.Vehicle; if (veh != null) { transform.SetPositionAndRotation(AgniPlayer.SeatRoot(veh, p.Seat.Value), veh.transform.rotation); SitPose(veh); } }
             // aim pitch: bend the upper spine (remote players visibly look up/down)
             float pitch = (p == AgniPlayer.Local && AgniLocalPlayer.Instance != null) ? AgniLocalPlayer.Instance.Pitch : p.Pitch.Value;
             if (spine2 != null) spine2.Rotate(transform.right, Mathf.Clamp(pitch, -50, 50) * 0.45f, Space.World);
@@ -179,6 +181,24 @@ namespace Agni.Net
             rArm.Rotate(right, (-35f * raise) + 110f * swing, Space.World); // cock back, then whip forward
             if (rFore != null) rFore.Rotate(right, -70f * raise * (1 - swing), Space.World);
             if (spine2 != null) spine2.Rotate(Vector3.up, 18f * raise - 30f * swing, Space.World);
+        }
+
+        Transform lUp, lLow, rUp, rLow, lFoot, rFoot; bool legsFound;
+        /// seated: thighs forward, shins down (car seats) or astride (bike / buggy pillion); hands rest near the wheel for the driver
+        void SitPose(AgniVehicle veh)
+        {
+            if (!legsFound) { legsFound = true; lUp = F(model, "LeftUpLeg"); lLow = F(model, "LeftLeg"); rUp = F(model, "RightUpLeg"); rLow = F(model, "RightLeg"); }
+            var right = transform.right; var fwd = transform.forward; bool astride = veh.kind == VKind.Bike;
+            float hip = astride ? -70f : -86f, knee = astride ? 95f : 88f, spread = astride ? 16f : 6f;
+            if (lUp != null) { lUp.Rotate(right, hip, Space.World); lUp.Rotate(fwd, -spread, Space.World); }
+            if (rUp != null) { rUp.Rotate(right, hip, Space.World); rUp.Rotate(fwd, spread, Space.World); }
+            if (lLow != null) lLow.Rotate(right, knee, Space.World);
+            if (rLow != null) rLow.Rotate(right, knee, Space.World);
+            if (p.Driving && rArm != null && lArm != null && (gun == null || !gun.activeSelf))
+            {   // both arms forward to the handlebar / wheel
+                rArm.Rotate(right, -55f, Space.World); lArm.Rotate(right, -55f, Space.World);
+                rArm.Rotate(fwd, astride ? 25f : 40f, Space.World); lArm.Rotate(fwd, astride ? -25f : -40f, Space.World);
+            }
         }
     }
 }
