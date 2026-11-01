@@ -47,24 +47,46 @@ namespace Agni.Import.EditorTools
                 ShaderUtil.allowAsyncCompilation = false;
                 EditorSceneManager.OpenScene(Agni.Net.EditorTools.AgniNetSetup.ArenaPath, OpenSceneMode.Single);
                 Agni.Net.AgniVillages.Root = null; Agni.Net.AgniVillages.Build(null); AgniLandmarks.Root = null; AgniLandmarks.Build(null);
-                var camGo = new GameObject("ProofCam"); cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 2500; cam.nearClipPlane = 0.2f;
+                var camGo = new GameObject("ProofCam"); cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 9000; cam.nearClipPlane = 0.3f;
                 camGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
                 foreach (var c in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)) if (c != cam) c.enabled = false;
-                void S(string n, Vector3 p, Vector3 l, float fov = 50, int w = 1080, int h = 1350) { if (only == "" || n.Contains(only)) Shot(dir, n, p, l, fov, w, h); }
-                foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None)) if (r.name == "Sea" || r.name == "Ground") foreach (var m in r.sharedMaterials) Debug.Log("[AgniImportProof] " + r.name + " mat " + m.name + " shader " + m.shader.name + " supported " + m.shader.isSupported + " passes " + m.passCount + " layer " + r.gameObject.layer + " enabled " + r.enabled + " pos " + r.transform.position);
-                bool fog = RenderSettings.fog; RenderSettings.fog = false;
-                S("arena_overview", new Vector3(0, 520, -640), new Vector3(0, 0, -40), 55, 1350, 1080);
-                S("arena_top", new Vector3(0, 1250, -1), Vector3.zero, 46, 1350, 1350);
-                RenderSettings.fog = fog;
-                foreach (var s in AgniLandmarks.Table)
-                {
-                    var c = s.pos; var outward = new Vector3(c.x, 0, c.z).normalized; var side = Vector3.Cross(Vector3.up, outward);
-                    float R = s.footR;
-                    S("lm_" + s.name + "_air", c - outward * R * 1.6f + side * R * 0.5f + Vector3.up * R * 0.9f, c + Vector3.up * 3f, 50);
-                    S("lm_" + s.name + "_ground", c - outward * (R + 12f) + side * 6f + Vector3.up * 1.7f + Vector3.up * Mathf.Max(0, Agni.Import.AgniIsland.Height(c.x, c.z)), c + Vector3.up * 6f, 62);
+                bool Want(string n) => only == "" || only.Split('|').Any(o => o.Length > 0 && n.Contains(o));
+                void S(string n, Vector3 p, Vector3 l, float fov = 50, int w = 1080, int h = 1350) { if (Want(n)) Shot(dir, n, p, l, fov, w, h); }
+                float Y(Vector3 p) => AgniIndia.H(p.x, p.z);
+                bool fog = RenderSettings.fog;
+                if (Want("india_top"))
+                {   // top-down of the whole map (orthographic), plus where every place lands in the picture (labels are drawn on afterwards)
+                    RenderSettings.fog = false; cam.orthographic = true; cam.orthographicSize = 2080; cam.farClipPlane = 9000;
+                    var center = new Vector3(448, 0, 60);
+                    var labels = new System.Text.StringBuilder("[");
+                    cam.transform.SetPositionAndRotation(center + Vector3.up * 3000, Quaternion.Euler(90, 0, 0));
+                    var rt = new RenderTexture(1350, 1350, 24); cam.targetTexture = rt; cam.aspect = 1;
+                    void Lab(string n, Vector3 w, string kind) { var sp = cam.WorldToViewportPoint(w); labels.Append("{\"n\":\"" + n + "\",\"k\":\"" + kind + "\",\"x\":" + (sp.x * 1350).ToString("F0") + ",\"y\":" + ((1 - sp.y) * 1350).ToString("F0") + "},"); }
+                    foreach (var s in AgniLandmarks.Table) Lab(s.display, s.pos, "landmark");
+                    foreach (var v in Agni.Net.AgniVillages.Villages) Lab(v.name, new Vector3(v.c.x, 0, v.c.y), v.r >= 20 ? "village" : "spot");
+                    File.WriteAllText(Path.Combine(dir, "india_top_labels.json"), labels.ToString().TrimEnd(',') + "]");
+                    cam.Render(); RenderTexture.active = rt; var tex = new Texture2D(1350, 1350, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, 1350, 1350), 0, 0); tex.Apply();
+                    File.WriteAllBytes(Path.Combine(dir, "india_top.png"), tex.EncodeToPNG()); RenderTexture.active = null; cam.targetTexture = null; cam.orthographic = false; RenderSettings.fog = fog;
+                    Debug.Log("[AgniImportProof] shot india_top");
                 }
                 var gg = AgniLandmarks.Table[0].pos;
+                S("gg_establish", gg + new Vector3(-118f, 24f, -62f), gg + new Vector3(0, 9f, 0), 56);
+                S("gg_playerA", gg + new Vector3(-24f, 1.75f, 12f), gg + new Vector3(0, 14f, 0), 66);
+                S("gg_playerC", gg + new Vector3(-40f, 1.75f, 4f), gg + new Vector3(0, 13f, 0), 62);
                 S("gg_tower_top", gg + new Vector3(-10, 31.5f, -14), gg + new Vector3(0, 31.5f, 0), 28);
+                foreach (int ang in new[] { 0, 45, 135, 180, 225, 315 }) foreach (float dist in new[] { 48f, 66f })
+                    {   if (dist > 50f && ang % 180 != 0) continue;   // ground level from the grass around the square, looking at the clock tower
+                        var dv = Quaternion.Euler(0, ang, 0) * Vector3.forward; var cp = gg + dv * dist; cp.y = Mathf.Max(Y(cp), 0.2f) + 1.65f;
+                        S("gg_lawn_" + ang + "_" + (int)dist, cp, gg + new Vector3(0, 13f, 0), 60);
+                    }
+                foreach (var s2 in AgniLandmarks.Table)
+                {
+                    if (s2.name == "GhantaGharSquare") continue;
+                    var c2 = s2.pos; var o2 = new Vector3(c2.x, 0, c2.z).normalized; if (o2.sqrMagnitude < 0.5f) o2 = Vector3.forward; var sd = Vector3.Cross(Vector3.up, o2);
+                    var cp = c2 - o2 * (s2.footR * 2.0f + 25f) + sd * s2.footR * 0.6f; cp.y = Mathf.Max(Y(cp), 0) + 22f;
+                    S("est_" + s2.name, cp, c2 + Vector3.up * 5f, 56);
+                }
+                foreach (var v in Agni.Net.AgniVillages.Villages) { if (v.r < 25) continue; var c3 = new Vector3(v.c.x, 0, v.c.y); var cp = c3 + new Vector3(-v.r * 1.6f, 0, -v.r * 1.6f); cp.y = Y(cp) + 22f; S("vil_" + v.name.Replace(" ", ""), cp, c3 + Vector3.up * (Y(c3) + 2f), 58); }
             }
             catch (System.Exception e) { Debug.LogException(e); code = 1; }
             EditorApplication.Exit(code);

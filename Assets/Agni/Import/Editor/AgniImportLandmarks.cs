@@ -124,17 +124,35 @@ namespace Agni.Import.EditorTools
         // ------------------------------------------------------------------ loot spots
         static readonly string[] NoLootParts = { "VS_Hill", "CB_TeaRow", "CB_ShadeTrees", "CB_Ditch", "GG_Plaza", "GG_Planters", "GG_Bridge", "MILL_Yard", "MILL_Chimney", "MILL_Signs", "KV_Palms", "PG_Trees", "PG_Hay", "VS_RadioMast", "VS_CompoundWall", "GG_TowerStone", "KV_Walkways" };
         [System.Serializable] class SpotFile { public LmSpots[] landmarks; }
+        [System.Serializable] class PadFile { public PadOut[] pads; }
+        [System.Serializable] class PadOut { public string name; public float x0, z0, cell; public int w, h; public float[] y; }
+        /// the slab/yard/plaza surfaces near ground level, sampled from the kit colliders on a 2 m grid (the island berms up to them)
+        static PadOut SamplePad(string n, GameObject go)
+        {
+            var rs = go.GetComponentsInChildren<Renderer>(); var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            const float cell = 2f; float x0 = b.min.x - 2f, z0 = b.min.z - 2f; int w = Mathf.CeilToInt((b.size.x + 4f) / cell), h = Mathf.CeilToInt((b.size.z + 4f) / cell);
+            var y = new float[w * h]; int n0 = 0;
+            for (int j = 0; j < h; j++) for (int i = 0; i < w; i++)
+                {
+                    float x = x0 + (i + 0.5f) * cell, z = z0 + (j + 0.5f) * cell; y[j * w + i] = -99f;
+                    if (Physics.Raycast(new Vector3(x, b.max.y + 5f, z), Vector3.down, out var hit, b.size.y + 20f, ~0, QueryTriggerInteraction.Ignore) && hit.normal.y > 0.9f && hit.point.y > -0.7f && hit.point.y < 0.9f)
+                    { y[j * w + i] = Mathf.Round(hit.point.y * 100f) / 100f; n0++; }
+                }
+            Debug.Log("[AgniImport] pad " + n + ": " + n0 + " of " + (w * h) + " cells");
+            return new PadOut { name = n, x0 = x0, z0 = z0, cell = cell, w = w, h = h, y = y };
+        }
         [System.Serializable] class LmSpots { public string name; public float[] p; public byte[] tier; }
         /// raycast every building part of every landmark prefab for floors with headroom (indoors) and usable roofs; writes Resources/AgniImport/landmark_spots.json
         public static void Spots()
         {
             UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
-            var file = new SpotFile { landmarks = new LmSpots[Names.Length] };
+            var file = new SpotFile { landmarks = new LmSpots[Names.Length] }; var padList = new List<PadOut>();
             for (int li = 0; li < Names.Length; li++)
             {
                 var n = Names[li];
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(RES + n + ".prefab"));
                 Physics.SyncTransforms();
+                if (n != "VindhyaShikhar" && n != "KayalVillage") padList.Add(SamplePad(n, go));
                 var pts = new List<Vector3>(); var tiers = new List<byte>(); int indoor = 0, roof = 0;
                 var kit = go.transform.Find("Kit");
                 foreach (Transform part in kit)
@@ -178,9 +196,12 @@ namespace Agni.Import.EditorTools
                 Object.DestroyImmediate(go);
             }
             File.WriteAllText("Assets/Agni/Import/Resources/AgniImport/landmark_spots.json", JsonUtility.ToJson(file));
+            File.WriteAllText("Assets/Agni/Import/Resources/AgniImport/landmark_pads.json", JsonUtility.ToJson(new PadFile { pads = padList.ToArray() }));
+            AssetDatabase.ImportAsset("Assets/Agni/Import/Resources/AgniImport/landmark_pads.json");
             AssetDatabase.ImportAsset("Assets/Agni/Import/Resources/AgniImport/landmark_spots.json");
         }
 
+        public static void SpotsBatch() { int c = 0; try { Spots(); } catch (System.Exception ex) { Debug.LogException(ex); c = 1; } EditorApplication.Exit(c); }
         public static void Run(bool onlyReport = false)
         {
             Directory.CreateDirectory(RES);

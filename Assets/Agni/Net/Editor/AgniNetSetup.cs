@@ -160,7 +160,8 @@ namespace Agni.Net.EditorTools
         static bool Blocked(Vector3 p, float pad) { if (Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.z, pad)) return true; foreach (var b in blockers) if ((new Vector2(p.x, p.z) - b.c).magnitude < b.r + pad) return true; return false; }
         static GameObject Prop(string kenney, Vector3 pos, float scale, float yaw, bool trunkCollider)
         {
-            if (Blocked(pos, trunkCollider ? 2.5f : 1.5f)) return null;
+            if (Blocked(pos, trunkCollider ? 2.5f : 1.5f) || Agni.Import.AgniIsland.RoadDist(pos.x, pos.z) < Agni.Import.AgniIsland.RoadHalfW + 1.5f) return null;
+            if (Mathf.Abs(pos.y) < 1e-4f) pos.y = Agni.Import.AgniIsland.Height(pos.x, pos.z) - 0.05f;
             var src = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Agni/Kenney/" + kenney + ".fbx"); if (src == null) return null;
             var g = (GameObject)PrefabUtility.InstantiatePrefab(src); g.transform.SetParent(root, false); g.transform.localPosition = pos; g.transform.localScale = Vector3.one * scale; g.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             var rs = g.GetComponentsInChildren<Renderer>(); if (rs.Length == 0) return g; var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
@@ -172,7 +173,8 @@ namespace Agni.Net.EditorTools
 
         static GameObject Tree(GameObject pf, Vector3 pos, float scale, float yaw, float pad)
         {
-            if (pf == null || Blocked(pos, pad)) return null;
+            if (pf == null || Blocked(pos, pad) || Agni.Import.AgniIsland.RoadDist(pos.x, pos.z) < Agni.Import.AgniIsland.RoadHalfW + pad * 0.6f) return null;
+            if (Mathf.Abs(pos.y) < 1e-4f) pos.y = Agni.Import.AgniIsland.Height(pos.x, pos.z) - 0.05f;
             var g = (GameObject)PrefabUtility.InstantiatePrefab(pf); g.transform.SetParent(root, false); g.transform.localPosition = pos; g.transform.localScale = Vector3.one * scale; g.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             return g;
         }
@@ -191,41 +193,32 @@ namespace Agni.Net.EditorTools
             mCompound = Lit("M_Compound", new Color(0.78f, 0.62f, 0.48f), 0.1f, plaster, 4);
             var mSea = Lit("M_Sea", new Color(0.16f, 0.42f, 0.52f), 0.85f); var wsh = Shader.Find("AgniRoyale/Water"); if (wsh != null) { mSea.shader = wsh; EditorUtility.SetDirty(mSea); } // IMPORT v1 water
 
-            // ground: the IMPORT v1 island (440 m grass + beach, river under Ghanta Ghar's bridge, Kayal's backwater canal) — AgniIslandMesh / AgniIsland.Height
-            Agni.Import.EditorTools.AgniIslandMesh.Build(root, mGround, mSand);
-            var sea = GameObject.CreatePrimitive(PrimitiveType.Plane); sea.name = "Sea"; sea.transform.SetParent(root, false); sea.transform.localScale = new Vector3(400, 1, 400); sea.transform.localPosition = new Vector3(0, Agni.Import.AgniIsland.SeaY, 0); sea.layer = 4; /* Water layer: boats ignore it, walkers stand on it */ sea.GetComponent<MeshRenderer>().sharedMaterial = mSea;
+            // ground: the INDIA map (AgniIndiaTerrain builds terrain/sea/roads/bridges/Blender trees+grass at load, same on server and clients)
+            Agni.Import.EditorTools.AgniImportIndia.Configure(root, mSea);
 
             // villages (AgniVillages, built at runtime from code): build once here only to learn the footprints, keep props off them
             AgniVillageSetup.Materials();
             AgniVillages.Root = null; var vr = AgniVillages.Build(null); blockers.Clear();
             foreach (var f in AgniVillages.Footprints) blockers.Add((f.c, f.r + 1.5f));
             Object.DestroyImmediate(vr.gameObject); AgniVillages.Root = null;
-            // compound walls (waist / chest high cover)
-            for (int k = 0; k < 95; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(15, 420); var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); if (Blocked(p, 7f)) continue; Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.3f, 0.35f), mCompound, root, Rf(0, 180)); }
-            // nature: our own Indian trees (neem, mango, palm, khejri, gulmohar, banana, lantana bushes); a few kit rocks + barrels/crates
-            var treePf = AgniTreeSetup.Build(); var big = new List<GameObject>(); var bushes = new List<GameObject>();
-            foreach (var kv in treePf) { if (kv.Key.StartsWith("Lantana") || kv.Key.StartsWith("Banana")) bushes.Add(kv.Value); else big.Add(kv.Value); if (kv.Key.StartsWith("Neem") || kv.Key.StartsWith("Mango")) big.Add(kv.Value); }
-            for (int k = 0; k < 340 && big.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 432f; Tree(big[rnd.Next(big.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.85f, 1.12f), Rf(0, 360), 3.5f); }
-            // village edges: banana plants + lantana hedges around each village ring
-            foreach (var v in AgniVillages.Villages) for (int k = 0; k < 7 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2); var p = new Vector3(v.c.x + Mathf.Cos(a) * (v.r + Rf(2, 9)), 0, v.c.y + Mathf.Sin(a) * (v.r + Rf(2, 9))); Tree(bushes[rnd.Next(bushes.Count)], p, Rf(0.8f, 1.15f), Rf(0, 360), 1.5f); }
-            for (int k = 0; k < 140 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 430f; Tree(bushes[rnd.Next(bushes.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.8f, 1.2f), Rf(0, 360), 1.5f); }
-            string[] rocks = { "rock_largeA", "rock_tallA", "stone_tallA" };
-            for (int k = 0; k < 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 240f; Prop(rocks[rnd.Next(rocks.Length)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(2.5f, 4.5f), Rf(0, 360), false); }
+            // compound walls (waist / chest high cover) round the villages and landmarks, where a fight happens
+            var hubs = new List<(Vector2 c, float r)>(); foreach (var v in AgniVillages.Villages) hubs.Add((v.c, v.r)); foreach (var s in Agni.Import.AgniLandmarks.Table) hubs.Add((new Vector2(s.pos.x, s.pos.z), s.footR));
+            foreach (var hb in hubs)
+                for (int k = 0; k < 6; k++)
+                {
+                    float a = Rf(0, Mathf.PI * 2), r = hb.r + Rf(8, 40); var p = new Vector3(hb.c.x + Mathf.Cos(a) * r, 0, hb.c.y + Mathf.Sin(a) * r);
+                    if (Blocked(p, 7f) || !Agni.Import.AgniIsland.IsFlat(p.x, p.z, 7f, 0.5f) || Agni.Import.AgniIsland.RoadDist(p.x, p.z) < 6f) continue;
+                    p.y = Agni.Import.AgniIsland.Height(p.x, p.z) - 0.1f; Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.4f, 0.35f), mCompound, root, Rf(0, 180));
+                }
             string[] small = { "barrel", "box-large" };
-            for (int k = 0; k < 80; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.01f, 1f)) * 420f; var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), 2.2f, Rf(0, 360), false); }
+            foreach (var hb in hubs) for (int k = 0; k < 4; k++) { float a = Rf(0, Mathf.PI * 2), r = hb.r + Rf(2, 18); var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(hb.c.x + Mathf.Cos(a) * r, 0, hb.c.y + Mathf.Sin(a) * r), 2.2f, Rf(0, 360), false); }
 
-            // light: bright warm Indian daylight, soft haze
-            var sunGo = new GameObject("Sun"); var sun = sunGo.AddComponent<Light>(); sun.type = LightType.Directional; sun.color = new Color(1f, 0.95f, 0.86f); sun.intensity = 1.35f; sun.shadows = LightShadows.Soft; sunGo.transform.rotation = Quaternion.Euler(47, -38, 0);
-            RenderSettings.sun = sun;
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.72f, 0.82f); RenderSettings.ambientEquatorColor = new Color(0.66f, 0.64f, 0.55f); RenderSettings.ambientGroundColor = new Color(0.33f, 0.29f, 0.22f);
-            var sky = new Material(Shader.Find("Skybox/Procedural")) { name = "M_Sky" }; sky.SetFloat("_SunSize", 0.035f); sky.SetFloat("_AtmosphereThickness", 0.9f); sky.SetColor("_SkyTint", new Color(0.52f, 0.62f, 0.75f)); sky.SetColor("_GroundColor", new Color(0.55f, 0.55f, 0.5f)); sky.SetFloat("_Exposure", 1.25f);
-            AssetDatabase.CreateAsset(sky, "Assets/Agni/Net/Arena/M_Sky.mat"); RenderSettings.skybox = sky;
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 170; RenderSettings.fogEndDistance = 1100; RenderSettings.fogColor = new Color(0.78f, 0.82f, 0.84f);
+            // sky + light: the Blender "dopahar" sky with its own sun/ambient/fog numbers
+            Agni.Import.EditorTools.AgniImportIndia.Sky("dopahar");
             // preview camera (before your fighter spawns)
-            var camGo = new GameObject("ArenaPreviewCam"); camGo.tag = "MainCamera"; var cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 1500; camGo.transform.position = new Vector3(0, 110, -380); camGo.transform.LookAt(Vector3.zero); camGo.AddComponent<AudioListener>();
+            var camGo = new GameObject("ArenaPreviewCam"); camGo.tag = "MainCamera"; var cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 5000; camGo.transform.position = new Vector3(0, 900, -1900); camGo.transform.LookAt(Vector3.zero); camGo.AddComponent<AudioListener>();
             camGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-            var boot = new GameObject("AgniArenaBootstrap").AddComponent<AgniArenaBootstrap>(); boot.arenaRadius = 400f;
+            var boot = new GameObject("AgniArenaBootstrap").AddComponent<AgniArenaBootstrap>(); boot.arenaRadius = 1750f;
             EditorSceneManager.SaveScene(scene, ArenaPath);
             Debug.Log("[AgniNetSetup] arena saved, objects=" + root.GetComponentsInChildren<Transform>().Length);
         }

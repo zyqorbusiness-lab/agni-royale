@@ -37,13 +37,14 @@ Shader "AgniRoyale/Water"
             {
                 float e = 0.35; float2 q = i.ws.xz;
                 float hx = hgt(q + float2(e, 0)) - hgt(q - float2(e, 0)); float hz = hgt(q + float2(0, e)) - hgt(q - float2(0, e));
+                float fw = length(fwidth(q)) * _Ripple; float aa = saturate(1.6 - fw * 2.2); hx *= aa; hz *= aa; // far away / from the plane: ripples fade to a calm surface instead of white pixel noise
                 float3 n = normalize(float3(-hx * 0.9, 1, -hz * 0.9));
                 float3 v = normalize(GetCameraPositionWS() - i.ws);
                 float fres = pow(1 - saturate(dot(n, v)), 4);
                 Light L = GetMainLight(TransformWorldToShadowCoord(i.ws));
                 half3 body = lerp(_Deep.rgb, _Shallow.rgb, saturate(fres * 1.6)) * (0.55 + 0.45 * saturate(L.direction.y + 0.3)) ;
                 half3 col = lerp(body, _Sky.rgb, saturate(fres * 0.85));
-                float3 hv = normalize(L.direction + v); float spec = pow(saturate(dot(n, hv)), _Gloss) * 0.9 * L.shadowAttenuation;
+                float3 hv = normalize(L.direction + v); float spec = pow(saturate(dot(n, hv)), lerp(_Gloss * 0.6, _Gloss, aa)) * 0.9 * aa * aa * L.shadowAttenuation;
                 col += L.color * spec;
                 col = MixFog(col, i.fog); return half4(col, 1);
             }

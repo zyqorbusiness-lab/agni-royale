@@ -17,6 +17,12 @@ namespace Agni.Net
     {
         string dir, mode, tagName; RenderTexture rt, rtUI; int W = 2400, H = 1080;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void EarlyArgs()
+        {   // graphics tier for a test run must be in place before the arena builds its terrain
+            if (string.IsNullOrEmpty(AgniNetConfig.Arg("-agniShot"))) return;
+            var g = AgniNetConfig.Arg("-agniGfx"); if (g != null && int.TryParse(g, out int gi)) { PlayerPrefs.SetInt("agni.gfx", gi); PlayerPrefs.Save(); }
+        }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
         {
@@ -37,6 +43,7 @@ namespace Agni.Net
             else if (mode == "net") yield return NetTest();
             else if (mode == "ugs") yield return UgsTest();
             else if (mode == "loot") yield return Loot();
+            else if (mode == "india") yield return India();
             else if (mode == "netloot") yield return NetLoot();
             else yield return Grenade();
             Log("done"); Quit(0);
@@ -192,6 +199,28 @@ namespace Agni.Net
         }
         void HudOn(bool on) { var lp = AgniLocalPlayer.Instance; if (lp.Hud != null) lp.Hud.gameObject.SetActive(on); if (lp.LootHud != null) lp.LootHud.gameObject.SetActive(on); }
         void LookFrom(Vector3 camPos, Vector3 at) { var c = AgniLocalPlayer.Instance.Cam; c.transform.SetPositionAndRotation(camPos, Quaternion.LookRotation(at - camPos)); }
+
+        // ------------------------------------------------------------------ india: the match on the India map — counts + a ground shot at Ghanta Ghar
+        IEnumerator India()
+        {
+            yield return WaitPlaying(2.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            int trees = 0, tiles = 0; if (Agni.Import.AgniIndiaTerrain.Tiles != null) foreach (var t in Agni.Import.AgniIndiaTerrain.Tiles) if (t != null) { tiles++; trees += t.terrainData.treeInstanceCount; }
+            int details = 0; if (Agni.Import.AgniIndiaTerrain.Tiles != null && Agni.Import.AgniIndiaTerrain.Tiles.Length > 0) details = Agni.Import.AgniIndiaTerrain.Tiles[0].terrainData.detailPrototypes.Length;
+            Log("india tiles=" + tiles + " trees=" + trees + " grassKinds=" + details + " landmarks=" + (Agni.Import.AgniLandmarks.Root != null ? Agni.Import.AgniLandmarks.Root.childCount : -1)
+                + " players=" + AgniPlayer.All.Count + " loot live=" + AgniPickup.Live.Count + " spots=" + AgniVillages.Spots.Count + " sky=" + (RenderSettings.skybox != null ? RenderSettings.skybox.name : "none") + " quality=" + AgniMahal.Quality);
+            var gg = Agni.Import.AgniLandmarks.Table[0].pos; float ang = float.Parse(AgniNetConfig.Arg("-agniGGAng") ?? "180"), dist = float.Parse(AgniNetConfig.Arg("-agniGGDist") ?? "44");
+            var dv = Quaternion.Euler(0, ang, 0) * Vector3.forward; var p = gg + dv * dist; p.y = Agni.Import.AgniIndia.H(p.x, p.z) + 0.05f;
+            var to = gg - p; float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+            me.ServerTeleport(p, yaw); lp.Yaw = yaw; lp.Pitch = -8; yield return new WaitForSecondsRealtime(2.5f);
+            HudOn(true); yield return Frames(6); yield return Shot("india_gg_tps");
+            int w0 = W, h0 = H; SetSize(2400, 1080); yield return Frames(6); yield return Shot("india_gg_tps_landscape"); SetSize(w0, h0); yield return Frames(3);
+            float t0 = Time.realtimeSinceStartup; int f0 = Time.frameCount; yield return new WaitForSecondsRealtime(3f);
+            Log("frames in 3 s (software GL, not a phone number) = " + (Time.frameCount - f0) + " pos=" + me.transform.position + " ground=" + Agni.Import.AgniIndia.H(me.transform.position.x, me.transform.position.z));
+            HudOn(false); lp.freeCam = true; var body = lp.ViewPos;
+            LookFrom(body + dv * 4.2f + Vector3.up * 1.15f + Quaternion.Euler(0, ang + 90, 0) * Vector3.forward * 0.9f, gg + Vector3.up * 10f + Quaternion.Euler(0, ang + 90, 0) * Vector3.forward * 4f); lp.Cam.fieldOfView = 56; yield return Frames(4); yield return Shot("india_gg_hero_free");
+            lp.freeCam = false; HudOn(true);
+        }
         IEnumerator Loot()
         {
             yield return WaitPlaying(2.0f);

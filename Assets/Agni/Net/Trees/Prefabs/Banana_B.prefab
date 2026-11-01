@@ -427,6 +427,7 @@ GameObject:
   m_Component:
   - component: {fileID: 646992558275009665}
   - component: {fileID: 1101914810382838327}
+  - component: {fileID: 6866026577244668916}
   m_Layer: 0
   m_Name: Banana_B
   m_TagString: Untagged
@@ -485,3 +486,26 @@ LODGroup:
     renderers:
     - renderer: {fileID: 326368175390740943}
   m_Enabled: 1
+--- !u!136 &6866026577244668916
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7576704573044213382}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.32
+  m_Height: 4
+  m_Direction: 1
+  m_Center: {x: 0, y: 2, z: 0}

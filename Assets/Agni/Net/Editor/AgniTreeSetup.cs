@@ -30,7 +30,7 @@ namespace Agni.Net.EditorTools
     public static class AgniTreeSetup
     {
         const string D = "Assets/Agni/Net/Trees/";
-        public static readonly string[] Species = { "Neem", "Mango", "Palm", "Khejri", "Gulmohar", "Banana", "Lantana" };
+        public static readonly string[] Species = { "Neem", "Mango", "Palm", "Khejri", "Gulmohar", "Banana", "Lantana", "Ashoka", "Bamboo", "Banyan", "Deodar", "Hedge" };
         static Material Mat(string name, Texture2D tex, Texture2D nrm, bool clip, float smooth)
         {
             var path = D + name + ".mat"; var m = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -49,11 +49,11 @@ namespace Agni.Net.EditorTools
             {
                 var src = AssetDatabase.LoadAssetAtPath<GameObject>(D + sp + ".fbx"); if (src == null) { Debug.LogWarning("[AgniTrees] missing " + sp); continue; }
                 var inst = (GameObject)PrefabUtility.InstantiatePrefab(src); PrefabUtility.UnpackPrefabInstance(inst, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-                var vars = new List<Transform>(); foreach (Transform t in inst.transform) if (t.name.StartsWith(sp + "_")) vars.Add(t);
-                if (vars.Count == 0) vars.Add(inst.transform);
+                var vars = new List<Transform>(); foreach (Transform t in inst.transform) if (t.name.StartsWith(sp) && t.name.Contains("_") && !t.name.StartsWith("UCX")) vars.Add(t);
+                if (vars.Count == 0 || vars.TrueForAll(t => t.name.Contains("_LOD"))) { vars.Clear(); inst.name = sp + "_A"; vars.Add(inst.transform); }
                 foreach (var v in vars)
                 {
-                    v.SetParent(null, true); string vn = v.name; v.position = Vector3.zero; v.rotation = Quaternion.identity;
+                    if (v != inst.transform) v.SetParent(null, true); string vn = v.name; v.position = Vector3.zero; v.rotation = Quaternion.identity;
                     var lods = new List<LOD>(); float[] sizes = { 0.32f, 0.11f, 0.035f, 0.006f };
                     var cols = new List<Transform>();
                     for (int li = 0; li < 4; li++)
@@ -73,13 +73,13 @@ namespace Agni.Net.EditorTools
                             {   // sub-mesh 0 = bark, 1 = leaves (single-material meshes: leaves if the name says so)
                                 var mf = r.GetComponent<MeshFilter>(); int sub = mf != null && mf.sharedMesh != null ? mf.sharedMesh.subMeshCount : 1;
                                 if (sub >= 2) r.sharedMaterials = new[] { bark, leaf };
-                                else r.sharedMaterial = (sp == "Lantana" || r.name.ToLower().Contains("leaf")) ? leaf : bark;
+                                else r.sharedMaterial = (sp == "Lantana" || sp == "Hedge" || r.name.ToLower().Contains("leaf")) ? leaf : bark;
                             }
                             r.shadowCastingMode = li <= 1 ? ShadowCastingMode.On : ShadowCastingMode.Off; rs.Add(r);
                         }
                         if (rs.Count > 0) lods.Add(new LOD(sizes[li], rs.ToArray()));
                     }
-                    var lg = v.gameObject.AddComponent<LODGroup>(); lg.SetLODs(lods.ToArray()); lg.RecalculateBounds();
+                    var lg = v.GetComponent<LODGroup>(); if (lg == null) lg = v.gameObject.AddComponent<LODGroup>(); lg.SetLODs(lods.ToArray()); lg.RecalculateBounds();
                     // trunk collider: the UCX hull, else a capsule
                     bool any = false;
                     foreach (var t in v.GetComponentsInChildren<Transform>(true))
@@ -88,13 +88,14 @@ namespace Agni.Net.EditorTools
                         if (mf != null && mf.sharedMesh != null) { var mc = t.gameObject.AddComponent<MeshCollider>(); mc.sharedMesh = mf.sharedMesh; mc.convex = true; any = true; }
                         if (mr != null) Object.DestroyImmediate(mr); if (mf != null) Object.DestroyImmediate(mf);
                     }
-                    if (!any && sp != "Lantana") { var cc = v.gameObject.AddComponent<CapsuleCollider>(); cc.radius = 0.35f; cc.height = 4f; cc.center = Vector3.up * 2f; }
+                    // root capsule: what a terrain tree collides with (TerrainCollider reads only a root CapsuleCollider); bushes stay walk-through
+                    if (sp != "Lantana" && sp != "Hedge") { var cc = v.gameObject.AddComponent<CapsuleCollider>(); cc.radius = sp == "Banyan" ? 0.9f : sp == "Bamboo" ? 0.45f : 0.32f; cc.height = 4f; cc.center = Vector3.up * 2f; }
                     var b = new Bounds(); bool first = true; foreach (var r in v.GetComponentsInChildren<Renderer>()) { if (!r.name.Contains("_LOD0")) continue; if (first) { b = r.bounds; first = false; } else b.Encapsulate(r.bounds); }
                     Debug.Log("[AgniTrees] " + vn + " size " + b.size + " lods=" + lods.Count + " ucx=" + any);
                     foreach (var t in v.GetComponentsInChildren<Transform>()) GameObjectUtility.SetStaticEditorFlags(t.gameObject, StaticEditorFlags.BatchingStatic);
-                    var pf = PrefabUtility.SaveAsPrefabAsset(v.gameObject, D + "Prefabs/" + vn + ".prefab"); outp[vn] = pf; Object.DestroyImmediate(v.gameObject);
+                    var pf = PrefabUtility.SaveAsPrefabAsset(v.gameObject, D + "Prefabs/" + vn + ".prefab"); outp[vn] = pf; if (v != inst.transform) Object.DestroyImmediate(v.gameObject);
                 }
-                Object.DestroyImmediate(inst);
+                if (inst != null) Object.DestroyImmediate(inst);
             }
             AssetDatabase.SaveAssets(); return outp;
         }

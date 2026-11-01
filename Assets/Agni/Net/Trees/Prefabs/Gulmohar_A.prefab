@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2116408741871753008}
   - component: {fileID: 6044055512174044069}
+  - component: {fileID: 2386513007914074541}
   m_Layer: 0
   m_Name: Gulmohar_A
   m_TagString: Untagged
@@ -68,6 +69,29 @@ LODGroup:
     renderers:
     - renderer: {fileID: 6581022536867359535}
   m_Enabled: 1
+--- !u!136 &2386513007914074541
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 632814794451395493}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.32
+  m_Height: 4
+  m_Direction: 1
+  m_Center: {x: 0, y: 2, z: 0}
 --- !u!1 &1836819991390549474
 GameObject:
   m_ObjectHideFlags: 0

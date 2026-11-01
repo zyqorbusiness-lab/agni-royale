@@ -155,6 +155,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3651014877062276025}
   - component: {fileID: 1005341050863536833}
+  - component: {fileID: 8222261584281333300}
   m_Layer: 0
   m_Name: Palm_B
   m_TagString: Untagged
@@ -213,6 +214,29 @@ LODGroup:
     renderers:
     - renderer: {fileID: 777423042997292837}
   m_Enabled: 1
+--- !u!136 &8222261584281333300
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8400684098589736209}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.32
+  m_Height: 4
+  m_Direction: 1
+  m_Center: {x: 0, y: 2, z: 0}
 --- !u!1 &8418579882805378402
 GameObject:
   m_ObjectHideFlags: 0

@@ -41,7 +41,7 @@ namespace Agni.Import
         public static float Sign = 1f;
     }
 
-    /// Plain metal weathervane: rod + ball + compass cross (N/E/S/W plates) + arrow that swings into a slowly wandering wind.
+    /// Plain metal weathervane: rod + ball + a big arrow with a tail fin that swings into a slowly wandering wind (no compass cross).
     public class AgniWeathervane : MonoBehaviour
     {
         Transform arrow; float seed;
@@ -52,30 +52,16 @@ namespace Agni.Import
                 var g = GameObject.CreatePrimitive(t); g.name = n; Object.DestroyImmediate(g.GetComponent<Collider>()); g.transform.SetParent(par, false);
                 g.transform.localPosition = pos; g.transform.localScale = scale; g.transform.localRotation = Quaternion.Euler(euler); g.GetComponent<Renderer>().sharedMaterial = m; return g;
             }
-            P(PrimitiveType.Cylinder, "Rod", root, new Vector3(0, 1.15f, 0), new Vector3(0.09f, 1.15f, 0.09f), iron);
+            // arrow-only vane (no compass cross: from a distance a rod with cross arms reads as a religious cross)
+            P(PrimitiveType.Cylinder, "Rod", root, new Vector3(0, 1.0f, 0), new Vector3(0.09f, 1.0f, 0.09f), iron);
             P(PrimitiveType.Sphere, "Ball", root, new Vector3(0, 0.55f, 0), Vector3.one * 0.34f, brass);
             P(PrimitiveType.Cylinder, "Collar", root, new Vector3(0, 0.12f, 0), new Vector3(0.36f, 0.12f, 0.36f), iron);
-            P(PrimitiveType.Cube, "ArmNS", root, new Vector3(0, 1.25f, 0), new Vector3(0.05f, 0.05f, 1.6f), iron);
-            P(PrimitiveType.Cube, "ArmEW", root, new Vector3(0, 1.25f, 0), new Vector3(1.6f, 0.05f, 0.05f), iron);
-            // N/E/S/W as small cut-metal letter plates built from bars (no font needed)
-            Vector3[] D = { Vector3.forward, Vector3.right, Vector3.back, Vector3.left };
-            for (int i = 0; i < 4; i++)
-            {
-                var g = new GameObject("Letter_" + "NESW"[i]).transform; g.SetParent(root, false); g.localPosition = D[i] * 0.9f + Vector3.up * 1.25f; g.localRotation = Quaternion.LookRotation(Vector3.Cross(Vector3.up, D[i]));
-                float w = 0.22f, h = 0.3f, b = 0.045f; Vector3 S(float sx, float sy) => new Vector3(sx, sy, 0.03f);
-                switch (i)
-                {
-                    case 0: P(PrimitiveType.Cube, "a", g, new Vector3(-w / 2, 0, 0), S(b, h), brass); P(PrimitiveType.Cube, "b", g, new Vector3(w / 2, 0, 0), S(b, h), brass); P(PrimitiveType.Cube, "c", g, Vector3.zero, S(b, h * 1.15f), brass, new Vector3(0, 0, 36)); break;
-                    case 1: P(PrimitiveType.Cube, "a", g, new Vector3(-w / 2, 0, 0), S(b, h), brass); for (int k = -1; k <= 1; k++) P(PrimitiveType.Cube, "b" + k, g, new Vector3(0, k * h / 2, 0), S(w, b), brass); break;
-                    case 2: for (int k = -1; k <= 1; k++) P(PrimitiveType.Cube, "h" + k, g, new Vector3(0, k * h / 2, 0), S(w, b), brass); P(PrimitiveType.Cube, "u", g, new Vector3(-w / 2, h / 4, 0), S(b, h / 2), brass); P(PrimitiveType.Cube, "d", g, new Vector3(w / 2, -h / 4, 0), S(b, h / 2), brass); break;
-                    default: P(PrimitiveType.Cube, "a", g, new Vector3(-w * 0.4f, 0, 0), S(b, h), brass, new Vector3(0, 0, -12)); P(PrimitiveType.Cube, "b", g, new Vector3(-w * 0.13f, 0, 0), S(b, h), brass, new Vector3(0, 0, 12)); P(PrimitiveType.Cube, "c", g, new Vector3(w * 0.13f, 0, 0), S(b, h), brass, new Vector3(0, 0, -12)); P(PrimitiveType.Cube, "d", g, new Vector3(w * 0.4f, 0, 0), S(b, h), brass, new Vector3(0, 0, 12)); break;
-                }
-            }
-            var arrow = new GameObject("Arrow").transform; arrow.SetParent(root, false); arrow.localPosition = new Vector3(0, 1.95f, 0);
-            P(PrimitiveType.Cube, "Shaft", arrow, Vector3.zero, new Vector3(0.05f, 0.05f, 1.8f), iron);
-            P(PrimitiveType.Cube, "Head", arrow, new Vector3(0, 0, 0.92f), new Vector3(0.03f, 0.24f, 0.24f), brass, new Vector3(45, 0, 0));
-            P(PrimitiveType.Cube, "Fin", arrow, new Vector3(0, 0.06f, -0.8f), new Vector3(0.025f, 0.4f, 0.5f), brass);
-            P(PrimitiveType.Sphere, "TopBall", root, new Vector3(0, 2.36f, 0), Vector3.one * 0.12f, brass);
+            var arrow = new GameObject("Arrow").transform; arrow.SetParent(root, false); arrow.localPosition = new Vector3(0, 1.75f, 0);
+            P(PrimitiveType.Cube, "Shaft", arrow, Vector3.zero, new Vector3(0.06f, 0.06f, 2.0f), iron);
+            P(PrimitiveType.Cube, "Head", arrow, new Vector3(0, 0, 1.02f), new Vector3(0.035f, 0.3f, 0.3f), brass, new Vector3(45, 0, 0));
+            P(PrimitiveType.Cube, "Fin", arrow, new Vector3(0, 0.1f, -0.78f), new Vector3(0.03f, 0.62f, 0.62f), brass);
+            P(PrimitiveType.Cube, "Fin2", arrow, new Vector3(0, -0.04f, -0.55f), new Vector3(0.03f, 0.34f, 0.3f), brass);
+            P(PrimitiveType.Sphere, "TopBall", root, new Vector3(0, 2.02f, 0), Vector3.one * 0.13f, brass);
             foreach (var r in root.GetComponentsInChildren<MeshRenderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         }
         void Start()

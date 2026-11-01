@@ -9,7 +9,7 @@ namespace Agni.Net
 {
     public class AgniArenaBootstrap : MonoBehaviour
     {
-        public float arenaRadius = 400f;
+        public float arenaRadius = 1750f;
         float t0; bool spawned;
 
         void Awake()

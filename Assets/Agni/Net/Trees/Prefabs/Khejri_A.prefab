@@ -101,6 +101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 148882854883088594}
   - component: {fileID: 8194661827373239412}
+  - component: {fileID: 6933019857511653362}
   m_Layer: 0
   m_Name: Khejri_A
   m_TagString: Untagged
@@ -159,6 +160,29 @@ LODGroup:
     renderers:
     - renderer: {fileID: 984755545793289617}
   m_Enabled: 1
+--- !u!136 &6933019857511653362
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4943661315769129233}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.32
+  m_Height: 4
+  m_Direction: 1
+  m_Center: {x: 0, y: 2, z: 0}
 --- !u!1 &5454028981096180227
 GameObject:
   m_ObjectHideFlags: 0
