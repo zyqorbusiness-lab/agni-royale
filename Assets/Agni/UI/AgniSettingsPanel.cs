@@ -16,8 +16,7 @@ namespace Agni.UI
             K.CloseX(card, () => root.SetActive(false));
 
             float y = -212; const float row = 106;
-            Segmented(card, "GRAPHICS", y, new[] { "SMOOTH", "STANDARD", "ULTRA" }, () => (int)AgniSettings.Gfx, i => AgniSettings.Gfx = (GfxPreset)i, new bool[] { true, true, true },
-                new[] { "Purane phone ke liye", "Balanced", "Best look, zyada battery" }); y -= row;
+            Segmented(card, "GRAPHICS", y, new[] { "LOW", "NORMAL", "HIGH", "VERY HIGH" }, () => (int)AgniSettings.Gfx, i => AgniSettings.Gfx = (GfxPreset)i, new bool[] { true, true, true, true }, null); // (sub-captions removed: unreadable at 4 options) y -= row;
             Segmented(card, "FPS", y, new[] { "30 FPS", "60 FPS" }, () => AgniSettings.Fps >= 60 ? 1 : 0, i => AgniSettings.Fps = i == 1 ? 60 : 30, new[] { true, true }, null); y -= row;
             SliderRow(card, "SENSITIVITY", y, 0.2f, 2.5f, () => AgniSettings.Sensitivity, v => AgniSettings.Sensitivity = v, v => v.ToString("0.0") + "x"); y -= row;
             SliderRow(card, "SOUND EFFECTS", y, 0, 1, () => AgniSettings.Sfx, v => AgniSettings.Sfx = v, v => Mathf.RoundToInt(v * 100) + "%"); y -= row;
@@ -44,7 +43,7 @@ namespace Agni.UI
         static void Segmented(RectTransform card, string label, float y, string[] opts, Func<int> get, Action<int> set, bool[] enabled, string[] subs)
         {
             var r = Row(card, label, y);
-            float w = opts.Length == 2 ? 300 : 300, gap = 16, x0 = 440;
+            float w = opts.Length >= 4 ? 256 : 300, gap = 14, x0 = 440;
             var imgs = new List<Image>(); var txts = new List<Text>();
             void Refresh()
             {
@@ -63,7 +62,7 @@ namespace Agni.UI
                 var br = (RectTransform)b.transform; br.Place(new Vector2(0, 0.5f), new Vector2(x0 + i * (w + gap), 0), new Vector2(w, 74), new Vector2(0, 0.5f));
                 var sh = br.Find("Shadow"); if (sh != null) ((RectTransform)sh).Fill(0, -4, 0, 4);
                 var t = K.Txt(br, "T", opts[i], 32, Color.white, TextAnchor.MiddleCenter, true); t.rectTransform.Fill(0, subs != null && !string.IsNullOrEmpty(subs[i]) ? 14 : 0, 0, 0);
-                if (subs != null && !string.IsNullOrEmpty(subs[i])) { var st = K.Txt(br, "Sub", subs[i], 19, Pal.A(Pal.Ink, 0.6f), TextAnchor.LowerCenter); st.rectTransform.Fill(0, 6, 0, 0); st.fontStyle = FontStyle.Bold; }
+                if (subs != null && !string.IsNullOrEmpty(subs[i])) { var st = K.Txt(br, "Sub", subs[i], 22, Pal.A(Pal.Ink, 0.8f), TextAnchor.LowerCenter); st.rectTransform.Fill(0, 6, 0, 0); st.fontStyle = FontStyle.Bold; }
                 if (!enabled[i]) b.interactable = false;
                 imgs.Add(b.GetComponent<Image>()); txts.Add(t);
             }

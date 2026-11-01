@@ -44,7 +44,7 @@ namespace Agni.UI
         }
     }
 
-    public enum GfxPreset { Smooth = 0, Standard = 1, Ultra = 2 }
+    public enum GfxPreset { Smooth = 0, Standard = 1, Ultra = 2, VeryHigh = 3 } // shown as LOW / NORMAL / HIGH / VERY HIGH
 
     public static class AgniSettings
     {
@@ -71,7 +71,7 @@ namespace Agni.UI
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = Fps >= 60 ? 60 : 30;
             // Graphics: quality level by name (project has "Mobile" and "PC"), plus URP render scale / MSAA / shadows on device.
-            string want = Gfx == GfxPreset.Ultra ? "PC" : "Mobile";
+            string want = Gfx >= GfxPreset.Ultra ? "PC" : "Mobile";
             int idx = Array.IndexOf(QualitySettings.names, want);
             if (idx >= 0 && QualitySettings.GetQualityLevel() != idx) QualitySettings.SetQualityLevel(idx, true);
             if (!Application.isEditor && GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
@@ -81,7 +81,8 @@ namespace Agni.UI
                 {
                     case GfxPreset.Smooth: urp.renderScale = 0.75f; urp.msaaSampleCount = 1; urp.shadowDistance = 0f; break;
                     case GfxPreset.Standard: urp.renderScale = 1.0f; urp.msaaSampleCount = 1; urp.shadowDistance = 40f; break;
-                    case GfxPreset.Ultra: urp.renderScale = 1.0f; urp.msaaSampleCount = 4; urp.shadowDistance = 90f; break;
+                    case GfxPreset.Ultra: urp.renderScale = 1.0f; urp.msaaSampleCount = 2; urp.shadowDistance = 60f; break;
+                    case GfxPreset.VeryHigh: urp.renderScale = 1.0f; urp.msaaSampleCount = 4; urp.shadowDistance = 90f; break;
                 }
             }
             // Sound: SFX sources read AgniSettings.Sfx, music sources read AgniSettings.Music (see AgniLobby.music).

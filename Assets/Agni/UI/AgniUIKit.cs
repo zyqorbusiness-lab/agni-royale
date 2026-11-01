@@ -17,6 +17,8 @@ namespace Agni.UI
         public static readonly Color TealLight = Hex("#1F6B70");
         public static readonly Color Ink = Hex("#2A140C");
         public static readonly Color Red = Hex("#FF5A5A");
+        public static readonly Color Navy = Hex("#0B1A3A");      // lobby v2: Agni orange/gold on deep navy
+        public static readonly Color NavyLight = Hex("#1D3570");
         public static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
         public static Color A(Color c, float a) { c.a = a; return c; }
     }
@@ -88,7 +90,7 @@ namespace Agni.UI
             var im = rt.gameObject.AddComponent<Image>(); im.sprite = S(sprite); im.type = Image.Type.Sliced; im.color = body;
             var b = rt.gameObject.AddComponent<Button>(); b.targetGraphic = im;
             var cb = b.colors; cb.highlightedColor = new Color(1.05f, 1.05f, 1.05f); cb.pressedColor = new Color(0.82f, 0.82f, 0.82f); cb.fadeDuration = 0.06f; b.colors = cb;
-            if (onClick != null) b.onClick.AddListener(() => onClick());
+            if (onClick != null) b.onClick.AddListener(() => { AgniSfx.Play("sfx_button_tap"); onClick(); });
             if (!string.IsNullOrEmpty(label))
             {
                 var t = Txt(rt, "Label", label, fontSize, labelColor ?? Color.white, TextAnchor.MiddleCenter, true);
@@ -96,6 +98,12 @@ namespace Agni.UI
             }
             rt.gameObject.AddComponent<PressBounce>();
             return b;
+        }
+
+        /// Invisible raycast pad that grows a small button's touch target by `pad` px on every side.
+        public static void HitPad(Transform button, float pad)
+        {
+            var im = Img(button, "HitPad", null, new Color(0, 0, 0, 0)); im.raycastTarget = true; im.rectTransform.Fill(-pad, -pad, -pad, -pad); im.transform.SetAsFirstSibling();
         }
 
         public static Image Icon(Transform parent, string sprite, Vector2 size, Color c)
@@ -126,16 +134,35 @@ namespace Agni.UI
         }
     }
 
-    /// Small scale-punch on press (feels like a real mobile game button).
+    /// Press feedback: scale-punch + a quick warm glow flash (feels like a real mobile game button).
     public class PressBounce : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler
     {
-        float target = 1f;
-        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData e) { target = 0.93f; }
+        float target = 1f, flash; Image glow;
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData e) { target = 0.92f; flash = 1f; }
         public void OnPointerUp(UnityEngine.EventSystems.PointerEventData e) { target = 1f; }
         void Update()
         {
             float s = Mathf.Lerp(transform.localScale.x, target, 1f - Mathf.Exp(-25f * Time.unscaledDeltaTime));
             transform.localScale = new Vector3(s, s, 1);
+            if (flash > 0f)
+            {
+                if (glow == null) { glow = K.Img(transform, "PressGlow", "glow", new Color(1f, 0.75f, 0.35f, 0f)); glow.rectTransform.Fill(-40, -40, -40, -40); glow.transform.SetAsFirstSibling(); }
+                flash = Mathf.Max(0f, flash - Time.unscaledDeltaTime * 3.5f);
+                glow.color = new Color(1f, 0.75f, 0.35f, 0.75f * flash);
+            }
+        }
+    }
+
+    /// UI sound effects (Resources/AgniAudio/sfx_*.ogg), volume = Settings ▸ Sound effects.
+    public static class AgniSfx
+    {
+        static AudioSource src; static readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
+        public static void Play(string name, float vol = 1f)
+        {
+            if (!clips.TryGetValue(name, out var c)) { c = Resources.Load<AudioClip>("AgniAudio/" + name); clips[name] = c; }
+            if (c == null) return;
+            if (src == null) { var go = new GameObject("AgniSfx"); Object.DontDestroyOnLoad(go); src = go.AddComponent<AudioSource>(); src.playOnAwake = false; src.spatialBlend = 0; }
+            src.PlayOneShot(c, vol * AgniSettings.Sfx);
         }
     }
 
@@ -143,13 +170,14 @@ namespace Agni.UI
     public class SafeArea : MonoBehaviour
     {
         public float minSide = 28f; // canvas units, applied by the layout code
+        public static Rect ProofInset = new Rect(0, 0, 1, 1); // editor proof only: simulated safe area (normalised)
         Rect last; Vector2Int lastScreen;
         void OnEnable() { Apply(); }
-        void Update() { if (Screen.safeArea != last || lastScreen.x != Screen.width || lastScreen.y != Screen.height) Apply(); }
+        void Update() { if (AgniBoot.ProofMode) { Apply(); return; } if (Screen.safeArea != last || lastScreen.x != Screen.width || lastScreen.y != Screen.height) Apply(); }
         void Apply()
         {
             var rt = (RectTransform)transform; last = Screen.safeArea; lastScreen = new Vector2Int(Screen.width, Screen.height);
-            if (AgniBoot.ProofMode || Screen.width <= 0 || Screen.height <= 0 || last.width <= 0) { rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero; return; }
+            if (AgniBoot.ProofMode || Screen.width <= 0 || Screen.height <= 0 || last.width <= 0) { rt.anchorMin = ProofInset.min; rt.anchorMax = ProofInset.max; rt.offsetMin = rt.offsetMax = Vector2.zero; return; }
             Vector2 min = last.position, max = last.position + last.size;
             rt.anchorMin = new Vector2(min.x / Screen.width, min.y / Screen.height);
             rt.anchorMax = new Vector2(max.x / Screen.width, max.y / Screen.height);

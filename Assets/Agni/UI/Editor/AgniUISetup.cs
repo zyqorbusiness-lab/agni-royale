@@ -32,6 +32,32 @@ namespace Agni.UI.EditorTools
         }
     }
 
+    /// Lobby v2 audio import: music streams (low RAM), UI SFX decompress on load (zero latency).
+    public class AgniAudioImportPost : AssetPostprocessor
+    {
+        void OnPreprocessAudio()
+        {
+            if (!assetPath.Replace('\\', '/').Contains("/Resources/AgniAudio/")) return;
+            var ai = (AudioImporter)assetImporter; var s = ai.defaultSampleSettings;
+            bool music = !System.IO.Path.GetFileName(assetPath).StartsWith("sfx_");
+            s.loadType = music ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad;
+            s.compressionFormat = AudioCompressionFormat.Vorbis; s.quality = music ? 0.6f : 0.7f;
+            ai.defaultSampleSettings = s; ai.forceToMono = !music;
+        }
+    }
+
+    /// Lobby v2 anime characters (Resources/AgniChars): Generic rig, imported normals (custom face normals), no animation.
+    public class AgniCharImportPost : AssetPostprocessor
+    {
+        void OnPreprocessModel()
+        {
+            if (!assetPath.Replace('\\', '/').Contains("/Resources/AgniChars/")) return;
+            var mi = (ModelImporter)assetImporter;
+            mi.animationType = ModelImporterAnimationType.Generic; mi.importAnimation = false;
+            mi.importNormals = ModelImporterNormals.Import; mi.importBlendShapes = false; mi.isReadable = false;
+        }
+    }
+
     public static class AgniUISetup
     {
         public const string LoadingPath = "Assets/Agni/UI/Loading.unity", LobbyPath = "Assets/Agni/UI/Lobby.unity", IntroPath = "Assets/Agni/Intro/Intro.unity";
@@ -66,6 +92,13 @@ namespace Agni.UI.EditorTools
         public static void CreateBatch() { Create(); }
 
         [MenuItem("Agni Royale/UI/Render UI proof (play mode)")]
+        public static void LobbyProofBatch()
+        {
+            EditorSceneManager.OpenScene(LobbyPath, OpenSceneMode.Single);
+            Debug.Log("[AgniUIProof] entering play mode (lobby)");
+            EditorApplication.EnterPlaymode();
+        }
+
         public static void ProofBatch()
         {
             EditorSceneManager.OpenScene(LoadingPath, OpenSceneMode.Single);

@@ -215,7 +215,7 @@ namespace Agni.UI
     public class PopIn : MonoBehaviour
     {
         float t; Transform card;
-        void OnEnable() { t = 0; card = transform.Find("Card"); Update(); }
+        void OnEnable() { t = 0; card = transform.Find("Card"); Update(); if (Time.frameCount > 2) AgniSfx.Play("sfx_popup_open", 0.8f); }
         void Update()
         {
             if (card == null) return; t += Time.unscaledDeltaTime;
