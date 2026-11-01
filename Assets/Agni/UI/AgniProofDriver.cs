@@ -95,6 +95,28 @@ namespace Agni.UI
             while ((lobby = FindAnyObjectByType<AgniLobby>()) == null && Time.realtimeSinceStartup - t0 < 60) yield return null;
             if (lobby == null) { Debug.LogError("[AgniUIProof] no lobby"); Quit(1); yield break; }
             string pre = Arg("-agniPrefix") ?? "";
+            if (Arg("-agniEmotes") != null)
+            {   // IMPORT v1: emotes v2 on the lobby hero, full-body proof camera (portrait), frame taken mid-move
+                var list = Arg("-agniEmotes").Split('|'); var heroN = Arg("-agniHero"); if (heroN != null) { int hi = System.Array.IndexOf(Agni.Net.AgniHeroes.Names, heroN); if (hi >= 0) { Agni.Net.AgniHeroes.Pref = hi; lobby.StepHero(0); } }
+                float at = 1.6f; float.TryParse(Arg("-agniEmoteAt") ?? "1.6", out at);
+                yield return new WaitForSecondsRealtime(2.0f);
+                foreach (var en in list)
+                {
+                    int ei = System.Array.IndexOf(Agni.Net.AgniEmotes.Names, en); if (ei < 0) { Debug.Log("[AgniUIProof] no emote " + en); continue; }
+                    lobby.PlayLobbyEmote(ei); yield return new WaitForSecondsRealtime(at);
+                    var fc = FindAnyObjectByType<AgniFace>(); var lc = Camera.main; var ch = fc != null ? fc.transform : null; if (ch == null) continue;
+                    var c0 = ch.position + Vector3.up * 0.82f; var toCam = lc.transform.position - c0; toCam.y = 0; toCam.Normalize();
+                    var fgo = new GameObject("EmoteCam"); var cam = fgo.AddComponent<Camera>(); cam.clearFlags = lc.clearFlags; cam.backgroundColor = lc.backgroundColor; cam.nearClipPlane = 0.05f; cam.farClipPlane = 1600; cam.cullingMask = lc.cullingMask;
+                    cam.transform.position = c0 + toCam * 3.1f + Vector3.up * 0.25f; cam.transform.LookAt(c0); cam.fieldOfView = 40;
+                    var off = new System.Collections.Generic.List<Camera>(); foreach (var hc in Camera.allCameras) if (hc != cam) { hc.enabled = false; off.Add(hc); }
+                    SetSize(1080, 1350);
+                    string smile = fc.face != null ? " Smile=" + fc.face.GetBlendShapeWeight(fc.face.sharedMesh.GetBlendShapeIndex("Smile")).ToString("F0") + " Kiss_Pout=" + fc.face.GetBlendShapeWeight(fc.face.sharedMesh.GetBlendShapeIndex("Kiss_Pout")).ToString("F0") + " Blink_L=" + fc.face.GetBlendShapeWeight(fc.face.sharedMesh.GetBlendShapeIndex("Blink_L")).ToString("F0") : "";
+                    var an = ch.GetComponentInChildren<Animation>(); Debug.Log("[AgniUIProof] emote " + en + " playing=" + (an != null && an.IsPlaying("E_" + en)) + " t=" + (an != null && an["E_" + en] != null ? an["E_" + en].time.ToString("F2") : "-") + smile);
+                    yield return Shot(pre + "emote_" + en);
+                    foreach (var hc in off) hc.enabled = true; Destroy(fgo); SetSize(3000, 1350);
+                }
+                Quit(0); yield break;
+            }
             if (Arg("-agniHeroes") != null)
             {   // IMPORT v1: every hair-v3 hero on the lobby stage (face rig live: blink, look-at the camera, Happy on switch)
                 SetSize(3000, 1350); yield return new WaitForSecondsRealtime(2.5f);

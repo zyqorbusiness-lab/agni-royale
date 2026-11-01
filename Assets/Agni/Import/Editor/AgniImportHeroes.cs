@@ -15,6 +15,12 @@ namespace Agni.Import.EditorTools
     {
         void OnPreprocessModel()
         {
+            if (assetPath.Contains("/AgniImport/Emotes/"))
+            {   // emotes v2: legacy clips played by the same Animation component as the body clips (bones bind by mixamorig path under <Hero>_Rig)
+                var em = (ModelImporter)assetImporter; em.animationType = ModelImporterAnimationType.Legacy; em.importAnimation = true; em.materialImportMode = ModelImporterMaterialImportMode.None;
+                em.importCameras = false; em.importLights = false; em.importBlendShapes = false; em.resampleCurves = true; em.animationCompression = ModelImporterAnimationCompression.KeyframeReduction;
+                return;
+            }
             if (!assetPath.Contains("/Agni/Import/Heroes/")) return;
             var mi = (ModelImporter)assetImporter; mi.importBlendShapes = true; mi.importBlendShapeNormals = ModelImporterNormals.None; mi.importNormals = ModelImporterNormals.Import;
             mi.animationType = ModelImporterAnimationType.Generic; mi.importAnimation = false; mi.materialImportMode = ModelImporterMaterialImportMode.None; mi.importCameras = false; mi.importLights = false;

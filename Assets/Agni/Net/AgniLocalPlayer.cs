@@ -120,6 +120,7 @@ namespace Agni.Net
                 if (kb.tabKey.wasPressedThisFrame && LootHud != null) LootHud.ToggleBag();
                 if (kb.vKey.wasPressedThisFrame) aimToggle = !aimToggle;
                 if (kb.bKey.wasPressedThisFrame) P.VehicleRpc(); // get in / out of the nearest vehicle
+                if (kb.nKey.wasPressedThisFrame) P.EmoteRpc(P.Emote.Value != 0 ? (byte)0 : (byte)(AgniEmotes.Pref + 1)); // emote on / off
                 interactHeld = kb.eKey.isPressed || (Hud != null && Hud.ReviveHeld);
                 if (kb.escapeKey.wasPressedThisFrame) Cursor.lockState = CursorLockMode.None;
             }

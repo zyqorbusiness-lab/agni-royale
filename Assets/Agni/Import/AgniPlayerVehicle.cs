@@ -62,6 +62,7 @@ namespace Agni.Net
         /// called from ServerTick before walking; true = seated this tick (no walking)
         bool ServerRide(float dt)
         {
+            ServerEmoteTick();
             if (Seat.Value < 0) return false;
             var v = Vehicle;
             if (v == null || !v.IsSpawned || !Alive) { ServerExitVehicle(); return Seat.Value >= 0; }

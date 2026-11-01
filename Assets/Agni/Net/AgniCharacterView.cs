@@ -35,11 +35,11 @@ namespace Agni.Net
         }
         public void RebuildModel()
         {
-            if (model != null) Destroy(model.gameObject); model = null; anim = null; hasClips = false; legsFound = false; shownGun = 255; face = null;
+            if (model != null) Destroy(model.gameObject); model = null; anim = null; hasClips = false; legsFound = false; shownGun = 255; face = null; playingEmote = -1; emoteState = null;
             hips = spine1 = spine2 = rArm = rFore = rHand = lArm = head = null;
             BuildModel(); if (p.Dead && model != null) model.gameObject.SetActive(false);
         }
-        AgniFace face;
+        AgniFace face; int playingEmote = -1; string emoteState;
         void BuildModel()
         {
             var heroPrefab = AgniHeroes.Prefab(p.Hero.Value);
@@ -149,6 +149,15 @@ namespace Agni.Net
             if (held != null) held.SetActive(holdingThrow && (Time.time - throwT > 0.45f || Time.time - throwT < 0.27f));
             if (!holdingThrow && held != null) { Destroy(held); held = null; }
             if (!hasClips) return;
+            // emote v2: the networked emote overrides locomotion (face track rides along on AgniFace)
+            if (p.Emote.Value != 0 && !p.Knocked && !p.InVehicle)
+            {
+                int ei = p.Emote.Value - 1;
+                if (playingEmote != ei) { playingEmote = ei; emoteState = AgniEmotes.Play(anim, ei); if (face != null && face.enabled) face.PlayEmoteFace(AgniEmotes.Names[ei]); }
+                if (gun != null) gun.SetActive(false); if (held != null) held.SetActive(false);
+                return;
+            }
+            if (playingEmote >= 0) { playingEmote = -1; if (face != null && face.enabled) face.StopEmoteFace(); if (emoteState != null && anim[emoteState] != null) anim.Blend(emoteState, 0, 0.2f); emoteState = null; }
             string want;
             if (p.Knocked) want = "Prone_Crawl_InPlace";
             else if (p.Crouched.Value) want = speed > 0.4f ? "Crouch_Walk_InPlace" : "Crouch_Idle";
@@ -169,6 +178,7 @@ namespace Agni.Net
             }
             else if (transform.localPosition != Vector3.zero) { transform.localPosition = Vector3.zero; transform.localRotation = Quaternion.identity; }
             if (p == null || model == null || p.Dead || p.Knocked) return;
+            if (playingEmote >= 0) return; // dancing: no aim pose / spine pitch on top of the clip
             if (p.InVehicle) { var veh = p.Vehicle; if (veh != null) { transform.SetPositionAndRotation(AgniPlayer.SeatRoot(veh, p.Seat.Value), veh.transform.rotation); SitPose(veh); } }
             // aim pitch: bend the upper spine (remote players visibly look up/down)
             float pitch = (p == AgniPlayer.Local && AgniLocalPlayer.Instance != null) ? AgniLocalPlayer.Instance.Pitch : p.Pitch.Value;

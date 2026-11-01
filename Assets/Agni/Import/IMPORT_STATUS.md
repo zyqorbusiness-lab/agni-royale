@@ -103,3 +103,14 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - Proofs: 21_lobby_hero_v3_meera.jpg, 22_hero_face_rig_meera_happy.jpg, 23_heroes_v3_all10.jpg, 24_match_hero_kabir_agnidev.jpg.
 - Weak spots: hair is still card/cap based (source README rates it ~3/10 vs Genshin); the lobby hero is small in the wide shot; several heroes are barefoot in the source art;
   spring (jiggle) bones are imported but not simulated yet (no hair sway); the arms in the lobby idle are the procedural AgniIdle, not an authored clip.
+
+## Block 5 — EMOTES v2 (in: lobby + match)
+- All 33 v2 clips (the 32 emotes + the Salsa_Step mocap bonus) from emotes/<Name>/Emote_<Name>.fbx, imported as legacy clips (same mixamorig bone paths as the body clips),
+  so they play on all 10 heroes. Loop / one-shot per the README table. The _v1 and _Secondary_Meera FBX files and Gown_Test were not imported (see below).
+- Face: every emote starts its matching AgniFace face track (e.g. Flying_Kiss pout + wink, Namaste smile).
+- LOBBY: emote picker under the hero picker: < EMOTE > + NACHO. The procedural idle pauses while a clip plays; one-shots return to idle.
+- MATCH: networked (AgniPlayer.Emote + EmoteAt). HUD button NACHO / key N plays your picked emote; moving, firing, healing, a vehicle or a knock cancels it on the server.
+- Tests: lobby (Meera) Bhangra_Beat, Raat_Ki_Rani, Flying_Kiss (Kiss_Pout 86), Namaste_Bow all playing with face; match (Zoya) Thumka playing, cancelled by moving.
+- Proofs: 25_emote_flying_kiss_lobby_face.jpg, 26_emote_bhangra_lobby.jpg, 27_emote_match_zoya_thumka.jpg.
+- Not imported / weak: secondary-motion takes (_Secondary_Meera.fbx: hair/skirt bake for Meera only) and Gown_Test (25 MB test gown); Dil_Ka_Jhoola's heart prop is not spawned
+  (she sits on air); no emote wheel yet (one picked emote per phone); no foot IK in the legacy player, so taller heroes may slide a little; a pink sprite from the lobby pet shows in some lobby frames.

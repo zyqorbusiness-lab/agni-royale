@@ -47,6 +47,7 @@ namespace Agni.Net
             else if (mode == "india") yield return India();
             else if (mode == "drive") yield return Drive();
             else if (mode == "gunskin") yield return GunSkin();
+            else if (mode == "emote") yield return EmoteMatch();
             else if (mode == "netloot") yield return NetLoot();
             else yield return Grenade();
             Log("done"); Quit(0);
@@ -376,6 +377,29 @@ namespace Agni.Net
             lp.freeCam = false; HudOn(true);
         }
         static bool FindDeep(Transform t, string n) { foreach (var c in t.GetComponentsInChildren<Transform>(true)) if (c.name == n) return true; return false; }
+
+        IEnumerator EmoteMatch()
+        {
+            yield return WaitPlaying(2.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            var c0 = OpenFlat(Agni.Import.AgniLandmarks.Table[0].pos, 30f, 300f, 8f);
+            var sun = RenderSettings.sun != null ? Vector3.ProjectOnPlane(RenderSettings.sun.transform.forward, Vector3.up).normalized : Vector3.forward;
+            float yaw = Quaternion.LookRotation(sun.sqrMagnitude > 0.1f ? -sun : Vector3.forward).eulerAngles.y;
+            me.ServerTeleport(c0, yaw); yield return new WaitForSecondsRealtime(0.8f);
+            int ei = System.Array.IndexOf(AgniEmotes.Names, AgniNetConfig.Arg("-agniEmote") ?? "Bhangra_Beat"); if (ei < 0) ei = 0;
+            me.ServerEmote((byte)(ei + 1)); yield return new WaitForSecondsRealtime(1.4f);
+            var an = me.transform.Find("View/Model")?.GetComponentInChildren<Animation>();
+            Log("emote " + AgniEmotes.Names[ei] + " net=" + me.Emote.Value + " playing=" + (an != null && an.IsPlaying("E_" + AgniEmotes.Names[ei])) + " hero=" + AgniHeroes.Names[me.Hero.Value]);
+            HudOn(false); lp.freeCam = true; var f = Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+            LookFrom(me.transform.position + f * 3.4f + Vector3.up * 1.3f, me.transform.position + Vector3.up * 0.95f); lp.Cam.fieldOfView = 40; yield return Frames(3); yield return Shot("emote_match");
+            lp.freeCam = false; HudOn(true);
+            // moving cancels it (server rule)
+            lp.script.on = true; lp.script.move = new Vector2(0, 1); yield return new WaitForSecondsRealtime(0.6f); lp.script.on = false; lp.script.move = Vector2.zero;
+            Log("after moving: net emote=" + me.Emote.Value);
+            int n = 0; foreach (var o in AgniPlayer.All) if (o != null && o.IsBot.Value && n < 6) { o.ServerEmote((byte)(1 + (n * 5) % AgniEmotes.Names.Length)); n++; }
+            yield return new WaitForSecondsRealtime(0.8f);
+            int on = 0; foreach (var o in AgniPlayer.All) if (o != null && o.Emote.Value != 0) on++; Log("bots emoting " + on + " (asked " + n + "; a moving bot cancels its own)");
+        }
         IEnumerator Loot()
         {
             yield return WaitPlaying(2.0f);

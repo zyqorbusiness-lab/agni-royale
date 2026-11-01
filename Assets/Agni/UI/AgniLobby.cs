@@ -166,6 +166,36 @@ namespace Agni.UI
             SpawnCharacter(); if (heroName != null) heroName.text = Agni.Net.AgniHeroes.Display[Agni.Net.AgniHeroes.Pref].ToUpper();
             var fc = character != null ? character.GetComponent<AgniFace>() : null; if (fc != null) fc.SetExpression("Happy", 0.25f, 1.6f);
         }
+        /// emotes v2 on the lobby hero: the clip on <Hero>_Rig (procedural idle paused) + the matching face track
+        Text emoteName;
+        public void PlayLobbyEmote(int i)
+        {
+            if (character == null) return; Transform rig = null; foreach (Transform c in character) if (c.name.EndsWith("_Rig")) rig = c; if (rig == null) return;
+            var idle = character.GetComponent<AgniIdle>(); if (idle != null) idle.enabled = false;
+            var anim = rig.GetComponent<Animation>(); if (anim == null) { anim = rig.gameObject.AddComponent<Animation>(); anim.playAutomatically = false; anim.cullingType = AnimationCullingType.AlwaysAnimate; }
+            var st = Agni.Net.AgniEmotes.Play(anim, i, 0.15f); var fc = character.GetComponent<AgniFace>(); if (fc != null && st != null) fc.PlayEmoteFace(Agni.Net.AgniEmotes.Names[i]);
+            StopCoroutine("EmoteBackToIdle"); if (st != null && !Agni.Net.AgniEmotes.Loops(Agni.Net.AgniEmotes.Names[i])) StartCoroutine("EmoteBackToIdle", anim[st].length + 0.4f);
+        }
+        IEnumerator EmoteBackToIdle(float t)
+        {
+            yield return new WaitForSeconds(t); if (character == null) yield break;
+            foreach (var a in character.GetComponentsInChildren<Animation>()) a.Stop();
+            var fc = character.GetComponent<AgniFace>(); if (fc != null) fc.StopEmoteFace(); var idle = character.GetComponent<AgniIdle>(); if (idle != null) idle.enabled = true;
+        }
+        void EmotePicker(RectTransform s)
+        {
+            var bar = K.R("EmotePicker", s).Place(new Vector2(0.5f, 0), new Vector2(-640, 250), new Vector2(560, 80), new Vector2(0.5f, 0));
+            var bg = K.Img(bar, "Bg", "rr_40", Pal.A(Pal.Navy, 0.72f)); bg.rectTransform.Fill();
+            emoteName = K.Txt(bar, "Name", Agni.Net.AgniEmotes.Display(Agni.Net.AgniEmotes.Pref), 34, Pal.Cream, TextAnchor.MiddleCenter, true); emoteName.rectTransform.Fill(84, 0, 200, 0);
+            var prev = K.Btn(bar, "Prev", "<", Pal.A(Pal.Saffron, 0.9f), 46, () => StepEmote(-1), "btn_40"); ((RectTransform)prev.transform).Place(new Vector2(0, 0.5f), new Vector2(6, 0), new Vector2(72, 72), new Vector2(0, 0.5f));
+            var next = K.Btn(bar, "Next", ">", Pal.A(Pal.Saffron, 0.9f), 46, () => StepEmote(1), "btn_40"); ((RectTransform)next.transform).Place(new Vector2(1, 0.5f), new Vector2(-122, 0), new Vector2(72, 72), new Vector2(1, 0.5f));
+            var play = K.Btn(bar, "Play", "NACHO", Pal.Saffron, 30, () => PlayLobbyEmote(Agni.Net.AgniEmotes.Pref), "btn_24"); ((RectTransform)play.transform).Place(new Vector2(1, 0.5f), new Vector2(-6, 0), new Vector2(112, 72), new Vector2(1, 0.5f));
+        }
+        public void StepEmote(int d)
+        {
+            int n = Agni.Net.AgniEmotes.Names.Length; Agni.Net.AgniEmotes.Pref = ((Agni.Net.AgniEmotes.Pref + d) % n + n) % n;
+            if (emoteName != null) emoteName.text = Agni.Net.AgniEmotes.Display(Agni.Net.AgniEmotes.Pref); PlayLobbyEmote(Agni.Net.AgniEmotes.Pref);
+        }
         void BuildHud()
         {
             // (the old flat painted backdrop canvas is gone: the 3D Mahal is the background now)
@@ -186,6 +216,7 @@ namespace Agni.UI
             StartArea(s);
             SeasonTag(s);
             HeroPicker(s);
+            EmotePicker(s);
 
             var f = K.Img(hud.transform, "Fade", null, Color.black); f.rectTransform.Fill(); fade = f.gameObject.AddComponent<CanvasGroup>(); fade.alpha = 1; fade.blocksRaycasts = false;
             StartCoroutine(FadeIn());
