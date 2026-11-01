@@ -74,7 +74,7 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
   LOD0-2, UCX hulls -> convex colliders, WheelColliders at the hub empties with the README numbers (spring, damper, torque, brakes, steer, anti-roll), seats/exits/buoys wired.
 - Server-authoritative: the server runs the physics; clients see an interpolated NetworkTransform. Driver = seat 0 (stick = gas/steer, sprint = handbrake); passengers may shoot, the driver may not;
   knocked/dead riders are ejected at the nearest clear exit. GAADI button on the HUD (BAITHO near a free vehicle / UTRO when seated), B key on PC; driver sees km/h.
-- Skins: 3-4 colour variants per vehicle + the shared skin set (vehicle_skins.json, 41 skins) via AgniVehicleSkins; picks are stored per phone (garage UI not built yet).
+- Skins: 3-4 colour variants per vehicle + the shared skin set (vehicle_skins.json, 49 skins) via AgniVehicleSkins; picks are stored per phone (garage UI not built yet).
 - Spawns: ~40 per match near villages/landmarks (boats on water). Last run: 7 jeep / 10 bike / 7 buggy / 4 pickup / 5 rickshaw / 1 monster / 5 boats.
 - Play-mode test (AgniShot -agniShotMode drive): enter jeep OK; gas 3.5 s -> 39 km/h, 20 m; steer right 2 s -> 41 km/h and turned 80 deg; brake 2.5 s -> 1.3 km/h; exit lands on the ground beside it, seat freed.
 - Proofs: 13_vehicle_lineup_rann.jpg (6 land vehicles on the Rann), 14_hero_driving_jeep.jpg, 15_jeep_follow_cam.jpg, 16_naav_boat_river.jpg.
