@@ -32,7 +32,7 @@ namespace Agni.Net
         {
             var L = new List<Village>();
             L.Add(new Village("Bada Chowk", Vector2.zero, 40, BType.DoManzila, BType.DoManzila, BType.ChhatGhar, BType.ChhatGhar, BType.ChhatGhar, BType.PakkaGhar, BType.PakkaGhar, BType.TinShed, BType.ChhatGhar));
-            string[] names = { "Ghaas Gaon", "Pathar Gaon", "Kumhar Tola", "Godown Yard", "Talab Basti", "Pakki Basti" };
+            string[] names = { "Ghaas Gaon", "Kankar Gaon", "Kumhar Tola", "Godown Yard", "Talab Basti", "Pakki Basti" }; // "Pathar Gaon" is now the Blender stone village under Vindhya Shikhar (IMPORT v1)
             BType[][] kinds = {
                 new[] { BType.GolJhopdi, BType.GolJhopdi, BType.GolJhopdi, BType.GolJhopdi, BType.KutchaGhar, BType.KutchaGhar, BType.KutchaGhar, BType.GolJhopdi, BType.KutchaGhar, BType.TinShed, BType.GolJhopdi },
                 new[] { BType.DoManzila, BType.PakkaGhar, BType.PakkaGhar, BType.PakkaGhar, BType.KutchaGhar, BType.KutchaGhar, BType.ChhatGhar, BType.TinShed },
@@ -48,6 +48,7 @@ namespace Agni.Net
         {
             if (Root != null) return Root;
             Spots.Clear(); Villages.Clear(); Footprints.Clear(); buildingCount = 0;
+            Footprints.AddRange(Agni.Import.AgniLandmarks.Footprints); // IMPORT v1: Blender landmarks own their ground (no village house / farm hut / tree on them)
             mats = new Material[(int)VMat.Count];
             for (int i = 0; i < mats.Length; i++) { mats[i] = Resources.Load<Material>("AgniNet/Village/" + MatNames[i]); if (mats[i] == null) mats[i] = Fallback((VMat)i); }
             Root = new GameObject("AgniVillages").transform; if (parent != null) Root.SetParent(parent, false);
@@ -76,12 +77,14 @@ namespace Agni.Net
                 Sign(vt, v, rnd);
             }
             // lonely farm huts / sheds between the villages
-            var lone = new[] { BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.ChhatGhar, BType.KutchaGhar, BType.PakkaGhar, BType.GolJhopdi, BType.TinShed, BType.KutchaGhar, BType.ChhatGhar, BType.GolJhopdi, BType.PakkaGhar };
+            var lone = new[] { BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.ChhatGhar, BType.KutchaGhar, BType.PakkaGhar, BType.GolJhopdi, BType.TinShed, BType.KutchaGhar, BType.ChhatGhar, BType.GolJhopdi, BType.PakkaGhar,
+                               BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.PakkaGhar, BType.GolJhopdi, BType.ChhatGhar, BType.KutchaGhar, BType.TinShed, BType.GolJhopdi, BType.PakkaGhar }; // +10 for the bigger island
             var ft = new GameObject("Farms").transform; ft.SetParent(Root, false);
             foreach (var kind in lone)
                 for (int tries = 0; tries < 80; tries++)
                 {
-                    float a = R(0, Mathf.PI * 2), r = R(62, 212); var p = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r; float fr = FootR(kind);
+                    float a = R(0, Mathf.PI * 2), r = R(62, 400); var p = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r; float fr = FootR(kind);
+                    if (Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.y, fr + 3f)) continue;
                     bool inV = false; foreach (var v in Villages) if ((p - v.c).magnitude < v.r + fr + 12) inV = true;
                     if (inV || !Free(p, fr + 18)) continue;
                     Building(kind, ft, new Vector3(p.x, 0, p.y), R(0, 360), rnd); Footprints.Add((p, fr)); break;

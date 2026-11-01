@@ -22,7 +22,7 @@ namespace Agni.Net
         public static System.Action<string, string, string, int> OnFeed; // killer, victim, weapon, 0 kill / 1 knock / 2 revive
         public static System.Action<int> OnEnded;
 
-        public static float ArenaRadius = 230f; // the playable circle (set by AgniArenaBootstrap)
+        public static float ArenaRadius = 400f; // the playable circle (set by AgniArenaBootstrap)
         bool started; double endAt;
         static readonly string[] BotNames = { "Shera_x", "Babloo.ff", "Guddu007", "Raju_Rocket", "Tinku.OP", "MunnaBhai", "Chintu_pro", "Lucky.gg", "Pappu99", "Golu_Gun", "Bunty.x", "Monu_King",
             "Sonu.Sniper", "Kaalia", "Bittu_77", "Jaggu_Dada", "Dabbu.yt", "Lallan", "Pintu_Fire", "Sweety.ff", "Rinku_Raja", "Ballu", "Chikoo_x", "Titu.op", "Nanhe_Ustad",
@@ -67,7 +67,7 @@ namespace Agni.Net
         public static Vector3 Ground(Vector3 p)
         {
             // cast from 60 m: the arena has nothing taller than a two-floor house, and players/props parked in the sky must not count as ground
-            var hits = Physics.RaycastAll(new Vector3(p.x, 60f, p.z), Vector3.down, 200f, ~0, QueryTriggerInteraction.Ignore);
+            var hits = Physics.RaycastAll(new Vector3(p.x, 160f, p.z), Vector3.down, 300f, ~0, QueryTriggerInteraction.Ignore); // 160: Vindhya Shikhar's hill + mast (IMPORT v1)
             float best = -1e9f; foreach (var h in hits) if (h.collider.GetComponentInParent<AgniPlayer>() == null && h.collider.GetComponentInParent<AgniPickup>() == null && h.collider.GetComponentInParent<AgniCrate>() == null && h.point.y > best) best = h.point.y;
             if (best > -1e8f) { if (best > 30f) Debug.LogWarning("[AgniMatch] tall ground at " + p + " y=" + best); return new Vector3(p.x, best + 0.05f, p.z); }
             return new Vector3(p.x, 0.05f, p.z);

@@ -157,7 +157,7 @@ namespace Agni.Net.EditorTools
             for (int i = 0; i < 8; i++) Box("Step" + i, new Vector3(w / 2 + 0.6f, (i + 0.5f) * h / 8f, -d / 2 + 0.6f + i * 0.45f), new Vector3(1.0f, h / 8f, 0.45f), mStone, hs);
         }
         static readonly System.Collections.Generic.List<(Vector2 c, float r)> blockers = new System.Collections.Generic.List<(Vector2, float)>();
-        static bool Blocked(Vector3 p, float pad) { foreach (var b in blockers) if ((new Vector2(p.x, p.z) - b.c).magnitude < b.r + pad) return true; return false; }
+        static bool Blocked(Vector3 p, float pad) { if (Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.z, pad)) return true; foreach (var b in blockers) if ((new Vector2(p.x, p.z) - b.c).magnitude < b.r + pad) return true; return false; }
         static GameObject Prop(string kenney, Vector3 pos, float scale, float yaw, bool trunkCollider)
         {
             if (Blocked(pos, trunkCollider ? 2.5f : 1.5f)) return null;
@@ -176,6 +176,7 @@ namespace Agni.Net.EditorTools
             var g = (GameObject)PrefabUtility.InstantiatePrefab(pf); g.transform.SetParent(root, false); g.transform.localPosition = pos; g.transform.localScale = Vector3.one * scale; g.transform.localRotation = Quaternion.Euler(0, yaw, 0);
             return g;
         }
+        public static void ArenaBatch() { int c = 0; try { Arena(); AssetDatabase.SaveAssets(); } catch (System.Exception e) { Debug.LogException(e); c = 1; } EditorApplication.Exit(c); }
         static void Arena()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -188,15 +189,11 @@ namespace Agni.Net.EditorTools
             mWallA = Lit("M_WallOchre", new Color(0.93f, 0.74f, 0.45f), 0.1f, plaster, 2); mWallB = Lit("M_WallBlue", new Color(0.62f, 0.78f, 0.86f), 0.1f, plaster, 2); mWallC = Lit("M_WallPink", new Color(0.93f, 0.68f, 0.66f), 0.1f, plaster, 2);
             mRoof = Lit("M_Roof", new Color(0.72f, 0.66f, 0.6f), 0.1f, plaster, 3); mStone = Lit("M_Stone", new Color(0.62f, 0.6f, 0.56f), 0.12f, plaster, 3); mWood = Lit("M_Window", new Color(0.18f, 0.14f, 0.12f), 0.2f);
             mCompound = Lit("M_Compound", new Color(0.78f, 0.62f, 0.48f), 0.1f, plaster, 4);
-            var mSea = Lit("M_Sea", new Color(0.16f, 0.42f, 0.52f), 0.85f);
+            var mSea = Lit("M_Sea", new Color(0.16f, 0.42f, 0.52f), 0.85f); var wsh = Shader.Find("AgniRoyale/Water"); if (wsh != null) { mSea.shader = wsh; EditorUtility.SetDirty(mSea); } // IMPORT v1 water
 
-            // ground: island disc of grass on a sand beach, sea around
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Cylinder); ground.name = "Ground"; ground.transform.SetParent(root, false); ground.transform.localScale = new Vector3(620, 0.5f, 620); ground.transform.localPosition = new Vector3(0, -0.5f, 0);
-            ground.GetComponent<MeshRenderer>().sharedMaterial = mGround; Object.DestroyImmediate(ground.GetComponent<Collider>()); ground.AddComponent<MeshCollider>().sharedMesh = ground.GetComponent<MeshFilter>().sharedMesh;
-            var beach = GameObject.CreatePrimitive(PrimitiveType.Cylinder); beach.name = "Beach"; beach.transform.SetParent(root, false); beach.transform.localScale = new Vector3(700, 0.5f, 700); beach.transform.localPosition = new Vector3(0, -0.62f, 0); beach.GetComponent<MeshRenderer>().sharedMaterial = mSand;
-            // the primitive's default CapsuleCollider becomes a 350 m SPHERE at this scale and shoves everyone to the shore — use the mesh instead
-            Object.DestroyImmediate(beach.GetComponent<Collider>()); beach.AddComponent<MeshCollider>().sharedMesh = beach.GetComponent<MeshFilter>().sharedMesh;
-            var sea = GameObject.CreatePrimitive(PrimitiveType.Plane); sea.name = "Sea"; sea.transform.SetParent(root, false); sea.transform.localScale = new Vector3(400, 1, 400); sea.transform.localPosition = new Vector3(0, -1.0f, 0); sea.GetComponent<MeshRenderer>().sharedMaterial = mSea;
+            // ground: the IMPORT v1 island (440 m grass + beach, river under Ghanta Ghar's bridge, Kayal's backwater canal) — AgniIslandMesh / AgniIsland.Height
+            Agni.Import.EditorTools.AgniIslandMesh.Build(root, mGround, mSand);
+            var sea = GameObject.CreatePrimitive(PrimitiveType.Plane); sea.name = "Sea"; sea.transform.SetParent(root, false); sea.transform.localScale = new Vector3(400, 1, 400); sea.transform.localPosition = new Vector3(0, Agni.Import.AgniIsland.SeaY, 0); sea.layer = 4; /* Water layer: boats ignore it, walkers stand on it */ sea.GetComponent<MeshRenderer>().sharedMaterial = mSea;
 
             // villages (AgniVillages, built at runtime from code): build once here only to learn the footprints, keep props off them
             AgniVillageSetup.Materials();
@@ -204,18 +201,18 @@ namespace Agni.Net.EditorTools
             foreach (var f in AgniVillages.Footprints) blockers.Add((f.c, f.r + 1.5f));
             Object.DestroyImmediate(vr.gameObject); AgniVillages.Root = null;
             // compound walls (waist / chest high cover)
-            for (int k = 0; k < 40; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(15, 220); var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); if (Blocked(p, 7f)) continue; Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.3f, 0.35f), mCompound, root, Rf(0, 180)); }
+            for (int k = 0; k < 95; k++) { float a = Rf(0, Mathf.PI * 2), r = Rf(15, 420); var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r); if (Blocked(p, 7f)) continue; Box("Compound", p + Vector3.up * 0.65f, new Vector3(Rf(6, 14), 1.3f, 0.35f), mCompound, root, Rf(0, 180)); }
             // nature: our own Indian trees (neem, mango, palm, khejri, gulmohar, banana, lantana bushes); a few kit rocks + barrels/crates
             var treePf = AgniTreeSetup.Build(); var big = new List<GameObject>(); var bushes = new List<GameObject>();
             foreach (var kv in treePf) { if (kv.Key.StartsWith("Lantana") || kv.Key.StartsWith("Banana")) bushes.Add(kv.Value); else big.Add(kv.Value); if (kv.Key.StartsWith("Neem") || kv.Key.StartsWith("Mango")) big.Add(kv.Value); }
-            for (int k = 0; k < 150 && big.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 245f; Tree(big[rnd.Next(big.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.85f, 1.12f), Rf(0, 360), 3.5f); }
+            for (int k = 0; k < 340 && big.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 432f; Tree(big[rnd.Next(big.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.85f, 1.12f), Rf(0, 360), 3.5f); }
             // village edges: banana plants + lantana hedges around each village ring
             foreach (var v in AgniVillages.Villages) for (int k = 0; k < 7 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2); var p = new Vector3(v.c.x + Mathf.Cos(a) * (v.r + Rf(2, 9)), 0, v.c.y + Mathf.Sin(a) * (v.r + Rf(2, 9))); Tree(bushes[rnd.Next(bushes.Count)], p, Rf(0.8f, 1.15f), Rf(0, 360), 1.5f); }
-            for (int k = 0; k < 60 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 235f; Tree(bushes[rnd.Next(bushes.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.8f, 1.2f), Rf(0, 360), 1.5f); }
+            for (int k = 0; k < 140 && bushes.Count > 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 430f; Tree(bushes[rnd.Next(bushes.Count)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(0.8f, 1.2f), Rf(0, 360), 1.5f); }
             string[] rocks = { "rock_largeA", "rock_tallA", "stone_tallA" };
             for (int k = 0; k < 0; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.02f, 1f)) * 240f; Prop(rocks[rnd.Next(rocks.Length)], new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), Rf(2.5f, 4.5f), Rf(0, 360), false); }
             string[] small = { "barrel", "box-large" };
-            for (int k = 0; k < 40; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.01f, 1f)) * 225f; var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), 2.2f, Rf(0, 360), false); }
+            for (int k = 0; k < 80; k++) { float a = Rf(0, Mathf.PI * 2), r = Mathf.Sqrt(Rf(0.01f, 1f)) * 420f; var nm = small[rnd.Next(small.Length)]; Prop(nm, new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r), 2.2f, Rf(0, 360), false); }
 
             // light: bright warm Indian daylight, soft haze
             var sunGo = new GameObject("Sun"); var sun = sunGo.AddComponent<Light>(); sun.type = LightType.Directional; sun.color = new Color(1f, 0.95f, 0.86f); sun.intensity = 1.35f; sun.shadows = LightShadows.Soft; sunGo.transform.rotation = Quaternion.Euler(47, -38, 0);
@@ -224,11 +221,11 @@ namespace Agni.Net.EditorTools
             RenderSettings.ambientSkyColor = new Color(0.62f, 0.72f, 0.82f); RenderSettings.ambientEquatorColor = new Color(0.66f, 0.64f, 0.55f); RenderSettings.ambientGroundColor = new Color(0.33f, 0.29f, 0.22f);
             var sky = new Material(Shader.Find("Skybox/Procedural")) { name = "M_Sky" }; sky.SetFloat("_SunSize", 0.035f); sky.SetFloat("_AtmosphereThickness", 0.9f); sky.SetColor("_SkyTint", new Color(0.52f, 0.62f, 0.75f)); sky.SetColor("_GroundColor", new Color(0.55f, 0.55f, 0.5f)); sky.SetFloat("_Exposure", 1.25f);
             AssetDatabase.CreateAsset(sky, "Assets/Agni/Net/Arena/M_Sky.mat"); RenderSettings.skybox = sky;
-            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 140; RenderSettings.fogEndDistance = 820; RenderSettings.fogColor = new Color(0.78f, 0.82f, 0.84f);
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 170; RenderSettings.fogEndDistance = 1100; RenderSettings.fogColor = new Color(0.78f, 0.82f, 0.84f);
             // preview camera (before your fighter spawns)
-            var camGo = new GameObject("ArenaPreviewCam"); camGo.tag = "MainCamera"; var cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 1500; camGo.transform.position = new Vector3(0, 70, -210); camGo.transform.LookAt(Vector3.zero); camGo.AddComponent<AudioListener>();
+            var camGo = new GameObject("ArenaPreviewCam"); camGo.tag = "MainCamera"; var cam = camGo.AddComponent<Camera>(); cam.farClipPlane = 1500; camGo.transform.position = new Vector3(0, 110, -380); camGo.transform.LookAt(Vector3.zero); camGo.AddComponent<AudioListener>();
             camGo.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-            var boot = new GameObject("AgniArenaBootstrap").AddComponent<AgniArenaBootstrap>(); boot.arenaRadius = 230f;
+            var boot = new GameObject("AgniArenaBootstrap").AddComponent<AgniArenaBootstrap>(); boot.arenaRadius = 400f;
             EditorSceneManager.SaveScene(scene, ArenaPath);
             Debug.Log("[AgniNetSetup] arena saved, objects=" + root.GetComponentsInChildren<Transform>().Length);
         }
