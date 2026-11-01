@@ -82,14 +82,44 @@ namespace Agni.UI
             var shGo = new GameObject("ContactShadow"); shGo.transform.SetParent(stage, false); shGo.transform.localPosition = new Vector3(-0.1f, 0.035f, 0); shGo.transform.localRotation = Quaternion.Euler(90, 0, 0);
             var ssr = shGo.AddComponent<SpriteRenderer>(); ssr.sprite = K.S("glow"); ssr.color = new Color(0.1f, 0.03f, 0, 0.55f); shGo.transform.localScale = new Vector3(0.9f, 0.6f, 1);
 
-            // pet: the Agni mascot (sprite billboard) beside the hero
-            petIdle = K.S("mascot_idle"); petBlink = K.S("mascot_blink");
-            var petGo = new GameObject("Pet_AgniGolu"); petGo.transform.SetParent(stage, false); pet = petGo.transform;
-            petSr = petGo.AddComponent<SpriteRenderer>(); petSr.sprite = petIdle; petSr.sortingOrder = 5;
-            float ph = petIdle != null ? petIdle.bounds.size.y : 1; pet.localScale = Vector3.one * (0.62f / ph);
-            pet.localPosition = new Vector3(0.78f, 0.36f, -0.35f);
-            var pshGo = new GameObject("PetShadow"); pshGo.transform.SetParent(stage, false); pshGo.transform.localPosition = new Vector3(0.78f, 0.04f, -0.35f); pshGo.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            var psr = pshGo.AddComponent<SpriteRenderer>(); psr.sprite = K.S("glow"); psr.color = new Color(0.1f, 0.03f, 0, 0.45f); pshGo.transform.localScale = new Vector3(0.45f, 0.25f, 1);
+            // pet: the picked Blender pet (tiger cub, or the real adult tiger at HIGH+) beside the hero; the old mascot sprite only if no pet loads
+            SpawnPet();
+            if (pet3d == null)
+            {
+                petIdle = K.S("mascot_idle"); petBlink = K.S("mascot_blink");
+                var petGo = new GameObject("Pet_AgniGolu"); petGo.transform.SetParent(stage, false); pet = petGo.transform;
+                petSr = petGo.AddComponent<SpriteRenderer>(); petSr.sprite = petIdle; petSr.sortingOrder = 5;
+                float ph = petIdle != null ? petIdle.bounds.size.y : 1; pet.localScale = Vector3.one * (0.62f / ph);
+                pet.localPosition = new Vector3(0.78f, 0.36f, -0.35f);
+                var pshGo = new GameObject("PetShadow"); pshGo.transform.SetParent(stage, false); pshGo.transform.localPosition = new Vector3(0.78f, 0.04f, -0.35f); pshGo.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                var psr = pshGo.AddComponent<SpriteRenderer>(); psr.sprite = K.S("glow"); psr.color = new Color(0.1f, 0.03f, 0, 0.45f); pshGo.transform.localScale = new Vector3(0.45f, 0.25f, 1);
+            }
+        }
+        GameObject pet3d; Text petName;
+        void SpawnPet()
+        {
+            if (pet3d != null) Destroy(pet3d);
+            var pf = Agni.Net.AgniPets.Prefab(Agni.Net.AgniPets.Pref, AgniMahal.Quality); if (pf == null) return;
+            pet3d = Instantiate(pf, stage); pet3d.name = "Pet_" + pf.name;
+            bool real = Agni.Net.AgniPets.IsReal(pet3d);
+            // cub sits at the hero's knee on the platform; the adult tiger (2.3 m long) lies beside the platform in profile
+            pet3d.transform.localPosition = real ? new Vector3(1.45f, 0.0f, 0.5f) : new Vector3(0.8f, 0.03f, -0.3f);
+            pet3d.transform.localRotation = Quaternion.Euler(0, real ? 62f : 25f, 0); // the pet FBX faces -Z after the axis bake: these yaws turn it 3/4 toward the camera
+            Agni.Net.AgniPets.Play(pet3d, "Sit", true, 0f);
+        }
+        void PetPicker(RectTransform s)
+        {
+            var bar = K.R("PetPicker", s).Place(new Vector2(0.5f, 0), new Vector2(-640, 342), new Vector2(560, 72), new Vector2(0.5f, 0));
+            var bg = K.Img(bar, "Bg", "rr_40", Pal.A(Pal.Navy, 0.72f)); bg.rectTransform.Fill();
+            petName = K.Txt(bar, "Name", Agni.Net.AgniPets.Display[Agni.Net.AgniPets.Pref], 28, Pal.Cream, TextAnchor.MiddleCenter, true); petName.rectTransform.Fill(76, 0, 76, 0);
+            var prev = K.Btn(bar, "Prev", "<", Pal.A(Pal.Saffron, 0.9f), 42, () => StepPet(-1), "btn_40"); ((RectTransform)prev.transform).Place(new Vector2(0, 0.5f), new Vector2(6, 0), new Vector2(64, 64), new Vector2(0, 0.5f));
+            var next = K.Btn(bar, "Next", ">", Pal.A(Pal.Saffron, 0.9f), 42, () => StepPet(1), "btn_40"); ((RectTransform)next.transform).Place(new Vector2(1, 0.5f), new Vector2(-6, 0), new Vector2(64, 64), new Vector2(1, 0.5f));
+        }
+        public void StepPet(int d)
+        {
+            int n = Agni.Net.AgniPets.Names.Length; Agni.Net.AgniPets.Pref = ((Agni.Net.AgniPets.Pref + d) % n + n) % n;
+            SpawnPet(); if (petName != null) petName.text = Agni.Net.AgniPets.Display[Agni.Net.AgniPets.Pref];
+            if (pet3d != null) Agni.Net.AgniPets.Play(pet3d, Agni.Net.AgniPets.IsReal(pet3d) ? "Roar" : "Happy", false, 0.1f);
         }
 
         static float Height(GameObject g)
@@ -217,6 +247,7 @@ namespace Agni.UI
             SeasonTag(s);
             HeroPicker(s);
             EmotePicker(s);
+            PetPicker(s);
 
             var f = K.Img(hud.transform, "Fade", null, Color.black); f.rectTransform.Fill(); fade = f.gameObject.AddComponent<CanvasGroup>(); fade.alpha = 1; fade.blocksRaycasts = false;
             StartCoroutine(FadeIn());

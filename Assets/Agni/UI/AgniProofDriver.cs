@@ -95,6 +95,28 @@ namespace Agni.UI
             while ((lobby = FindAnyObjectByType<AgniLobby>()) == null && Time.realtimeSinceStartup - t0 < 60) yield return null;
             if (lobby == null) { Debug.LogError("[AgniUIProof] no lobby"); Quit(1); yield break; }
             string pre = Arg("-agniPrefix") ?? "";
+            if (Arg("-agniPets") != null)
+            {   // IMPORT v1: each pet beside the hero on the lobby stage; a wide lobby frame + a closer portrait frame
+                var heroN = Arg("-agniHero"); if (heroN != null) { int hi = System.Array.IndexOf(Agni.Net.AgniHeroes.Names, heroN); if (hi >= 0) { Agni.Net.AgniHeroes.Pref = hi; lobby.StepHero(0); } }
+                SetSize(3000, 1350); yield return new WaitForSecondsRealtime(2.0f);
+                foreach (var pn in Arg("-agniPets").Split('|'))
+                {
+                    int pi = System.Array.IndexOf(Agni.Net.AgniPets.Names, pn); if (pi < 0) continue;
+                    Agni.Net.AgniPets.Pref = pi; lobby.StepPet(0); yield return new WaitForSecondsRealtime(1.2f);
+                    var pg = GameObject.Find("Stage"); Transform pt = null; if (pg != null) foreach (Transform c in pg.transform) if (c.name.StartsWith("Pet_")) pt = c;
+                    var pa = pt != null ? pt.GetComponent<Animation>() : null; string playing = ""; if (pa != null) foreach (AnimationState st in pa) if (pa.IsPlaying(st.name)) playing += st.name + " ";
+                    Debug.Log("[AgniUIProof] pet " + pn + " -> " + (pt != null ? pt.name : "none") + " playing " + playing);
+                    yield return Shot(pre + "pet_" + pn);
+                    var lc = Camera.main; var fc = FindAnyObjectByType<AgniFace>(); if (fc == null || pt == null) continue;
+                    var mid = Vector3.Lerp(fc.transform.position, pt.position, 0.5f) + Vector3.up * 0.75f; var toCam = lc.transform.position - mid; toCam.y = 0; toCam.Normalize();
+                    var fgo = new GameObject("PetCam"); var cam = fgo.AddComponent<Camera>(); cam.clearFlags = lc.clearFlags; cam.backgroundColor = lc.backgroundColor; cam.nearClipPlane = 0.05f; cam.farClipPlane = 1600; cam.cullingMask = lc.cullingMask;
+                    bool real = pt.name.Contains("Real"); cam.transform.position = mid + toCam * (real ? 4.6f : 3.4f) + Vector3.up * 0.35f; cam.transform.LookAt(mid); cam.fieldOfView = 40;
+                    var off = new System.Collections.Generic.List<Camera>(); foreach (var hc in Camera.allCameras) if (hc != cam) { hc.enabled = false; off.Add(hc); }
+                    SetSize(1080, 1350); yield return Frames(2); yield return Shot(pre + "petclose_" + pn);
+                    foreach (var hc in off) hc.enabled = true; Destroy(fgo); SetSize(3000, 1350);
+                }
+                Quit(0); yield break;
+            }
             if (Arg("-agniEmotes") != null)
             {   // IMPORT v1: emotes v2 on the lobby hero, full-body proof camera (portrait), frame taken mid-move
                 var list = Arg("-agniEmotes").Split('|'); var heroN = Arg("-agniHero"); if (heroN != null) { int hi = System.Array.IndexOf(Agni.Net.AgniHeroes.Names, heroN); if (hi >= 0) { Agni.Net.AgniHeroes.Pref = hi; lobby.StepHero(0); } }

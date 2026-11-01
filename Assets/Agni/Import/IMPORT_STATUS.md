@@ -114,3 +114,21 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - Proofs: 25_emote_flying_kiss_lobby_face.jpg, 26_emote_bhangra_lobby.jpg, 27_emote_match_zoya_thumka.jpg.
 - Not imported / weak: secondary-motion takes (_Secondary_Meera.fbx: hair/skirt bake for Meera only) and Gown_Test (25 MB test gown); Dil_Ka_Jhoola's heart prop is not spawned
   (she sits on air); no emote wheel yet (one picked emote per phone); no foot IK in the legacy player, so taller heroes may slide a little; a pink sprite from the lobby pet shows in some lobby frames.
+
+## Block 6 — PETS (lobby companions, tigers first)
+- Cute cubs from pets/ (100% ours): Bagha (Bengal tiger cub), Bagha_White, plus Sheru (lion cub), Gajju (baby elephant) and Mor (peacock). Each has 5 legacy clips (Idle/Walk/Run/Sit/Happy) and LOD0-2.
+- Real adult tigers from pets_real/: Bagha_Real and White_Tiger_Real (PBR albedo + normal + metal/smoothness, Idle/Walk/Run/Sit/Roar). The project copy is re-exported
+  from the .blend WITHOUT the 24k LOD0 (12k LOD1 is the top LOD) and with 1024 albedo/normal, because the 4.1 MB FBX and 5-6 MB textures exceed the GitHub upload limit of this connection.
+  On HIGH/VERY HIGH the two tiger picks show the real adult tiger beside the stage; on LOW/NORMAL the cub sits at the hero's knee.
+- LOBBY: the pet replaces the old mascot sprite (which comes back only if no pet loads). It sits by default and plays Happy (cub) or Roar (real tiger) when you switch. Pet picker: < PET >.
+- Built by Agni.Import.EditorTools.AgniImportPets.Batch -> Resources/AgniImport/Pets/<Name>.prefab.
+- Proofs: 28_pet_bengal_tiger_real_lobby.jpg, 29_pet_white_tiger_real_lobby.jpg, 30_pets_cubs_normal.jpg.
+- LICENCE TO DO: the real tigers are CC BY 4.0 (base mesh by MotionStreamStudios / CGJAY1111). The credit line in Assets/Agni/Import/Pets/CREDITS_pets_real.md MUST go
+  on a Credits screen and the store listing before release; the game has no Credits screen yet.
+- Not done: pets do not follow the player in a match yet (lobby only, as ordered); there is no pet ownership/store, so every pet is selectable.
+
+## Not imported in this pass (and why)
+- emotes/*_v1.fbx (superseded by v2), *_Secondary_Meera.fbx (Meera-only hair/skirt bake), Gown_Test (25 MB test asset, not a shipping outfit).
+- weapons/*/skins/_generated_examples (50+ auto skins; the 24 hand-made ones are in), weapons/*.blend and all .blend sources (kept outside Unity).
+- characters_face_v2 / characters_anime heads (replaced by hair v3); pets_real Sheru_Real (does not exist in the source).
+- Sky: subah/shaam/raat/monsoon panoramas are imported but only dopahar is switched on.
