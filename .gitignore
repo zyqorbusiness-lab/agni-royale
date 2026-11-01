@@ -107,3 +107,9 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Agni Royale: generated map assets (rebuilt by Agni Royale -> Rebuild map scene / AgniAutoRebuild)
+/Assets/Agni/Generated/
+/Assets/Agni/Generated.meta
+/Assets/Agni/Scenes/AgniMap.unity
+/Assets/Agni/Scenes/AgniMap.unity.meta

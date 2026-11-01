@@ -1,20 +1,34 @@
-# ATOLL ZERO
+# AGNI ROYALE
 
-A mobile battle-royale vertical slice by **Zyqor Studio**, built in **Unity 6.3 LTS (6000.3.27f2)** with the **Universal Render Pipeline** (Universal 3D cross-platform template: separate Mobile and PC renderer assets) and the **Input System** package.
+A mobile battle royale on an **India-shaped island**, by **Zyqor Studio**. Built in **Unity 6.3 LTS (6000.3.27f2)**, URP (Mobile + PC renderer assets) and the Input System. Distributed as an **APK** from Zyqor Studio's website (Android).
 
-Status: project skeleton (phase 1 — toolchain set up). Gameplay comes next.
+Status: **step 1 - map terrain blockout** (no gameplay yet). The map design is in the design doc (MAP_DESIGN.md, kept outside the repo).
 
-## Open it
-1. Install Unity Hub, then Unity **6000.3.27f2** (any 6000.3.x LTS opens it) with *Android Build Support* if you want phone builds.
-2. Unity Hub → **Add → Add project from disk** → pick this folder.
-3. Open `Assets/Scenes/SampleScene.unity`.
+## What's in step 1
+- `Assets/Agni/Scenes/AgniMap.unity` is the only build scene.
+- **Terrain:** a 4 x 4 grid of 1024 m Terrain tiles, 4096 m square in total. Each tile has a 513^2 heightmap and a 512^2 splat map, and uses only the layers it needs.
+  - The island follows **India's official outline**. It is traced from Natural Earth's India point-of-view boundary, so all of J&K (including PoK), Aksai Chin and Ladakh are inside India. The Andaman islets are included.
+  - Landforms: a Himalaya/Ladakh snow ridge (up to ~170 m), the flat Thar and the white Rann of Kutch, the Aravalli and Vindhya-Satpura ridges, the Deccan plateau, and the Western and Eastern Ghats. The central **Vindhya Shikhar** hot-drop peak is 96 m. Beaches run all round the coast.
+  - Rivers: Ganga (with the Hooghly), Yamuna, Narmada, Godavari, Krishna and Brahmaputra, carved as shallow channels that fill from the sea-level water plane.
+- **Terrain layers:** sand, grass, dry grass, rock, snow and mustard-field yellow. All are CC0 textures from Poly Haven at 1k, compressed to ASTC 6x6 on Android.
+- **Blockout:** each of the 15 zones (+ Pathar Gaon) has a placeholder building cluster, an orange marker pole and a floating name label. The 5 small spots (Anaj Godown, Radio Mast, Bijli Ghar, Purana Hawai Adda, Khandahar) get the same treatment.
+  - Each zone has a simple stand-in for its signature: the arch for Vijay Dwar, the clock tower, the four minarets, the mill with its chimney, the lighthouse, the palace, and so on.
+  - Also placed: the Sona Highway loop plus side roads and a rail line (road strips routed around the sea and steep ground), 20 bridges as simple boxes, and ~5,200 Kenney trees placed by region.
+  - Lighting: a procedural sky, linear fog and one sun.
+- **Viewer camera** (`AgniFlyCam`):
+  - Phone: drag on the left side to fly, drag on the right side to look. Buttons: UP / DOWN (hold), NEXT ZONE (jumps zone to zone) and DROP VIEW.
+  - PC: WASD, Q/E, right mouse to look, N for the next zone.
+
+## Rebuild the map
+1. Data: `Tools/terrain_gen/agni_terrain_gen.py` writes `TerrainSource/` (heights, splats, `map.json`: zones, spots, roads, bridges, rivers).
+2. Scene: menu **Agni Royale -> Rebuild map scene**, or
+   `Unity -batchmode -nographics -projectPath . -buildTarget Android -executeMethod AgniWorldBuilder.BuildBatch -logFile build_scene.log`
+   It recreates `Assets/Agni/Generated/` (terrain data, layers, materials, road meshes, tree prefabs) and `Assets/Agni/Scenes/AgniMap.unity`. Those files are not stored in git. After a fresh clone, the editor rebuilds them automatically the first time it opens (`AgniAutoRebuild`), and `AgniBuild.BuildAndroidApk` does the same if the scene is missing.
+3. Proof images: **Agni Royale -> Render proof images**. In batchmode this needs a GL context, e.g. Xvfb + `-force-glcore`, without `-nographics`.
 
 ## Android build
-Already set up: build target Android, company **Zyqor Studio**, product **Atoll Zero**, package `com.zyqorstudio.atollzero`, landscape only, Unity splash/logo **off**, **IL2CPP + ARM64** (runs on every modern phone; Play-store ready), target API auto (36), min API 25.
+The build is set up for Android: company **Zyqor Studio**, product **Agni Royale**, package `com.zyqorstudio.agniroyale`, landscape only, Unity splash/logo **off**, **IL2CPP + ARM64**, min API 25, target API auto (36), APK (not AAB).
+- Editor: menu **Agni Royale -> Build test APK**.
+- CLI: `Unity -batchmode -nographics -projectPath . -buildTarget Android -executeMethod AgniBuild.BuildAndroidApk -out ../builds/AgniRoyale_test.apk -logFile build.log`
 
-- In the editor: menu **Atoll Zero → Build test APK** (or File → Build Profiles → Android → Build).
-- From the command line:
-  `Unity -batchmode -nographics -projectPath . -buildTarget Android -executeMethod AtollBuild.BuildAndroidApk -out ../builds/AtollZero.apk -quit -logFile build.log`
-  (add `-mono` for a quick Mono/ARMv7 test build).
-
-Original game; not affiliated with any existing battle-royale title.
+Original game by Zyqor Studio; not affiliated with any other battle-royale title. Asset credits: CREDITS.md.

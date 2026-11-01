@@ -6,14 +6,14 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-// Batchmode helpers for Atoll Zero (Zyqor Studio).
-//   Unity -batchmode -nographics -projectPath <proj> -executeMethod AtollBuild.ConfigureAndroid -quit -logFile <log>
-//   Unity -batchmode -nographics -projectPath <proj> -executeMethod AtollBuild.BuildAndroidApk -quit -logFile <log> [-mono] [-out <apk>]
-public static class AtollBuild
+// Batchmode helpers for Agni Royale (Zyqor Studio).
+//   Unity -batchmode -nographics -projectPath <proj> -executeMethod AgniBuild.ConfigureAndroid -quit -logFile <log>
+//   Unity -batchmode -nographics -projectPath <proj> -executeMethod AgniBuild.BuildAndroidApk -quit -logFile <log> [-mono] [-out <apk>]
+public static class AgniBuild
 {
-    const string Package = "com.zyqorstudio.atollzero";
+    const string Package = "com.zyqorstudio.agniroyale";
 
-    [MenuItem("Atoll Zero/Configure Android settings")]
+    [MenuItem("Agni Royale/Configure Android settings")]
     public static void ConfigureAndroid() { Configure(!HasArg("-mono")); }
 
     static bool HasArg(string a) => Environment.GetCommandLineArgs().Contains(a);
@@ -30,7 +30,7 @@ public static class AtollBuild
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
 
         PlayerSettings.companyName = "Zyqor Studio";
-        PlayerSettings.productName = "Atoll Zero";
+        PlayerSettings.productName = "Agni Royale";
         var android = NamedBuildTarget.Android;
         PlayerSettings.SetApplicationIdentifier(android, Package);
 
@@ -61,15 +61,16 @@ public static class AtollBuild
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
         EditorUserBuildSettings.buildAppBundle = false;
         AssetDatabase.SaveAssets();
-        Debug.Log("[AtollBuild] configured Android: " + (il2cpp ? "IL2CPP ARM64" : "Mono ARMv7"));
+        Debug.Log("[AgniBuild] configured Android: " + (il2cpp ? "IL2CPP ARM64" : "Mono ARMv7"));
     }
 
-    [MenuItem("Atoll Zero/Build test APK")]
+    [MenuItem("Agni Royale/Build test APK")]
     public static void BuildAndroidApk()
     {
         Configure(!HasArg("-mono"));
-        string outPath = ArgVal("-out", Path.GetFullPath("../builds/AtollZero_test.apk"));
+        string outPath = ArgVal("-out", Path.GetFullPath("../builds/AgniRoyale_test.apk"));
         Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+        if (!File.Exists(AgniWorldBuilder.ScenePath)) AgniWorldBuilder.BuildAll();
         var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
         var opts = new BuildPlayerOptions
         {
@@ -80,7 +81,7 @@ public static class AtollBuild
             options = BuildOptions.None
         };
         BuildReport r = BuildPipeline.BuildPlayer(opts);
-        Debug.Log($"[AtollBuild] result={r.summary.result} size={r.summary.totalSize} errors={r.summary.totalErrors} out={outPath}");
+        Debug.Log($"[AgniBuild] result={r.summary.result} size={r.summary.totalSize} errors={r.summary.totalErrors} out={outPath}");
         if (Application.isBatchMode) EditorApplication.Exit(r.summary.result == BuildResult.Succeeded ? 0 : 1);
     }
 }
