@@ -58,6 +58,7 @@ public static class AgniBuild
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
         }
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
+        PlayerSettings.Android.forceInternetPermission = true; // multiplayer (NGO/UTP) + LAN room discovery
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
         EditorUserBuildSettings.buildAppBundle = false;
         AssetDatabase.SaveAssets();

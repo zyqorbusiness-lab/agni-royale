@@ -229,31 +229,140 @@ namespace Agni.UI
             }
         }
 
+        RectTransform squadRow; Text squadCap, startLabel, friendsBadge; Image friendsBadgeBg; string squadSig = "~"; bool myReady, arena = true;
+        GameObject lobbyToast; Text lobbyToastT; float lobbyToastUntil; AgniFriendsPanel friendsPanel;
+        static Agni.Social.IPartyService PartySvc => Agni.Social.AgniSocial.Party;
+
         void Squad(RectTransform s)
         {
-            var row = K.R("Squad", s).Place(new Vector2(0, 0), new Vector2(46, 34), new Vector2(560, 150), new Vector2(0, 0));
-            var cap = K.Txt(row, "Caption", "SQUAD  1/4", 28, Pal.Cream, TextAnchor.LowerLeft, true); cap.rectTransform.Place(new Vector2(0, 1), new Vector2(4, 8), new Vector2(300, 40), new Vector2(0, 0)); cap.Shadow(Pal.A(Color.black, 0.6f), 0, -2);
+            squadRow = K.R("Squad", s).Place(new Vector2(0, 0), new Vector2(46, 34), new Vector2(560, 150), new Vector2(0, 0));
+            squadCap = K.Txt(squadRow, "Caption", "SQUAD  1/4", 28, Pal.Cream, TextAnchor.LowerLeft, true); squadCap.rectTransform.Place(new Vector2(0, 1), new Vector2(4, 8), new Vector2(560, 40), new Vector2(0, 0)); squadCap.Shadow(Pal.A(Color.black, 0.6f), 0, -2);
+            // DOST button (friends + room code) right of the four slots
+            var fb = K.Btn(s, "Btn_DOST", null, Pal.A(Pal.Navy, 0.9f), 10, () => OpenFriends(AgniFriendsPanel.Tab.Dost), "btn_24");
+            var fr = (RectTransform)fb.transform; fr.Place(new Vector2(0, 0), new Vector2(46 + 4 * 134 + 6, 50), new Vector2(150, 118), new Vector2(0, 0));
+            K.Img(fr, "Ol", "ol_24", Pal.A(Pal.Gold, 0.6f)).rectTransform.Fill();
+            var fic = K.Icon(fr, "ic_character", new Vector2(56, 56), Pal.Hex("#FFD08A")); fic.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(56, 56), new Vector2(0.5f, 1));
+            var ft = K.Txt(fr, "Label", "DOST", 27, Color.white, TextAnchor.LowerCenter, true); ft.rectTransform.Fill(0, 8, 0, 0); ft.Shadow(Pal.A(Color.black, 0.6f), 0, -2);
+            friendsBadgeBg = K.Img(fr, "Online", "circle", Pal.Hex("#2FBF71")); friendsBadgeBg.rectTransform.Place(new Vector2(1, 1), new Vector2(-10, -10), new Vector2(40, 40), new Vector2(0.5f, 0.5f));
+            friendsBadge = K.Txt(friendsBadgeBg.transform, "N", "", 24, Color.white, TextAnchor.MiddleCenter, true); friendsBadge.rectTransform.Fill();
+            K.HitPad(fb.transform, 10);
+            RefreshSquad();
+        }
+
+        string SquadSignature()
+        {
+            var p = PartySvc; var sig = p.InParty + "|" + p.Code + "|" + p.IsLeader + "|" + myReady + "|";
+            foreach (var m in p.Members) sig += m.name + m.ready + m.leader + ",";
+            int on = 0; foreach (var f in Agni.Social.AgniSocial.Friends.Friends) if (f.presence != Agni.Social.Presence.Offline) on++;
+            return sig + on;
+        }
+
+        void RefreshSquad()
+        {
+            if (squadRow == null) return;
+            var sig = SquadSignature(); if (sig == squadSig) return; squadSig = sig;
+            for (int i = squadRow.childCount - 1; i >= 0; i--) { var c = squadRow.GetChild(i); if (c.name.StartsWith("Slot")) Destroy(c.gameObject); }
+            var p = PartySvc; var others = new List<Agni.Social.PartyMember>();
+            foreach (var m in p.Members) if (!m.isLocal) others.Add(m);
+            bool meLeader = !p.InParty || p.IsLeader;
             for (int i = 0; i < 4; i++)
             {
-                var slot = K.R("Slot" + i, row).Place(new Vector2(0, 0.5f), new Vector2(i * 134, 0), new Vector2(118, 118), new Vector2(0, 0.5f));
+                var slot = K.R("Slot" + i, squadRow).Place(new Vector2(0, 0.5f), new Vector2(i * 134, 0), new Vector2(118, 118), new Vector2(0, 0.5f));
                 if (i == 0)
                 {
                     var c = K.Img(slot, "Bg", "circle", Pal.Hex("#FFD08A")); c.rectTransform.Fill();
                     var f = K.Img(slot, "Face", "mascot_idle", Color.white); f.preserveAspect = true; f.rectTransform.Fill(14, 4, 14, 8);
                     var r = K.Img(slot, "Ring", "ring", Pal.Gold); r.rectTransform.Fill(-5, -5, -5, -5);
                     var crown = K.Img(slot, "Leader", "btno_16", Color.white); crown.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, -10), new Vector2(90, 32), new Vector2(0.5f, 0.5f));
-                    var ct = K.Txt(crown.transform, "T", "TUM", 22, Color.white, TextAnchor.MiddleCenter, true); ct.rectTransform.Fill();
+                    var ct = K.Txt(crown.transform, "T", meLeader ? "TUM ★" : "TUM", 22, Color.white, TextAnchor.MiddleCenter, true); ct.rectTransform.Fill();
+                    if (p.InParty && !p.IsLeader && myReady) Tick(slot);
+                }
+                else if (i - 1 < others.Count)
+                {
+                    var m = others[i - 1];
+                    var c = K.Img(slot, "Bg", "circle", m.leader ? Pal.Gold : Pal.Hex("#F2E3C8")); c.rectTransform.Fill();
+                    var ini = K.Txt(slot, "I", string.IsNullOrEmpty(m.name) ? "?" : m.name.Substring(0, 1).ToUpperInvariant(), 58, Pal.Ink, TextAnchor.MiddleCenter, true); ini.rectTransform.Fill(0, 8, 0, 0);
+                    var r = K.Img(slot, "Ring", "ring", m.ready || m.leader ? Pal.Hex("#2FBF71") : Pal.A(Pal.Cream, 0.6f)); r.rectTransform.Fill(-5, -5, -5, -5);
+                    var tagBg = K.Img(slot, "NameBg", "rr_16", Pal.A(Pal.Navy, 0.9f)); tagBg.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, -10), new Vector2(128, 32), new Vector2(0.5f, 0.5f));
+                    var nm = K.Txt(tagBg.transform, "T", (m.leader ? "★ " : "") + (m.name.Length > 8 ? m.name.Substring(0, 8) : m.name), 20, Color.white, TextAnchor.MiddleCenter, true); nm.rectTransform.Fill();
+                    if (m.ready || m.leader) Tick(slot);
                 }
                 else
                 {
-                    var b = K.Btn(slot, "Invite", null, Pal.A(Pal.Navy, 0.85f), 10, () => ComingSoon("SQUAD"), "btn_40");
+                    var b = K.Btn(slot, "Invite", null, Pal.A(Pal.Navy, 0.85f), 10, () => OpenFriends(AgniFriendsPanel.Tab.Dost), "btn_40");
                     ((RectTransform)b.transform).Fill();
                     var dash = K.Img(b.transform, "Ring", "ring", Pal.A(Pal.Cream, 0.4f)); dash.rectTransform.Fill(2, 2, 2, 2);
                     K.Icon(b.transform, "ic_plus", new Vector2(46, 46), Pal.A(Pal.Cream, 0.85f));
-                    // make the button circular-looking
                     b.GetComponent<Image>().sprite = K.S("circle"); b.GetComponent<Image>().type = Image.Type.Simple;
                     var sh = b.transform.Find("Shadow"); if (sh != null) sh.gameObject.SetActive(false);
                 }
+            }
+            int n = p.InParty ? Mathf.Max(1, p.Members.Count) : 1;
+            squadCap.text = "SQUAD  " + n + "/4" + (p.InParty && !string.IsNullOrEmpty(p.Code) ? "   ·   ROOM " + p.Code : "");
+            int on = 0; foreach (var f in Agni.Social.AgniSocial.Friends.Friends) if (f.presence != Agni.Social.Presence.Offline) on++;
+            if (friendsBadge != null) { friendsBadge.text = on.ToString(); friendsBadgeBg.gameObject.SetActive(on > 0); }
+            if (startLabel != null)
+            {
+                if (p.InParty && !p.IsLeader) startLabel.text = myReady ? "READY ✓" : "READY";
+                else startLabel.text = "START";
+            }
+        }
+        static void Tick(RectTransform slot)
+        {
+            var tk = K.Img(slot, "Ready", "circle", Pal.Hex("#2FBF71")); tk.rectTransform.Place(new Vector2(1, 1), new Vector2(4, 4), new Vector2(38, 38), new Vector2(1, 1));
+            K.Img(tk.transform, "R", "ring", Color.white).rectTransform.Fill(-2, -2, -2, -2);
+            K.Txt(tk.transform, "v", "✓", 26, Color.white, TextAnchor.MiddleCenter, true).rectTransform.Fill();
+        }
+
+        GameObject invitePopup;
+        void OnEnable() { Agni.Social.AgniSocial.InviteReceived += OnInvite; }
+        void OnDisable() { Agni.Social.AgniSocial.InviteReceived -= OnInvite; }
+        /// a friend's squad invite (online: UGS Friends message): JUDO joins their room by code
+        public void OnInvite(string from, string code)
+        {
+            if (invitePopup != null) Destroy(invitePopup);
+            var card = K.Modal(hud.transform, "SquadInvite", new Vector2(1100, 520), out invitePopup);
+            var t = K.Txt(card, "Title", "SQUAD INVITE", 58, Pal.SaffronDeep, TextAnchor.MiddleLeft, true); t.rectTransform.Place(new Vector2(0, 1), new Vector2(60, -75), new Vector2(900, 100), new Vector2(0, 0.5f));
+            var b = K.Txt(card, "Body", from + " ne tumhe apni squad me bulaya!\nRoom code: " + code, 38, Pal.Ink, TextAnchor.UpperLeft, true); b.rectTransform.Place(new Vector2(0, 1), new Vector2(60, -190), new Vector2(980, 130), new Vector2(0, 1));
+            var go = invitePopup;
+            var yes = K.Btn(card, "Join", "JUDO", Pal.Saffron, 46, () => { Destroy(go); PartySvc.JoinByCode(code); OpenFriends(AgniFriendsPanel.Tab.Room).Toast("Room " + code + " se jud rahe hain…"); }, "btn_24");
+            ((RectTransform)yes.transform).Place(new Vector2(0, 0), new Vector2(60, 40), new Vector2(400, 100), new Vector2(0, 0));
+            var no = K.Btn(card, "Later", "BAAD ME", Pal.Hex("#C9B8A4"), 40, () => Destroy(go), "btn_24");
+            ((RectTransform)no.transform).Place(new Vector2(0, 0), new Vector2(490, 40), new Vector2(320, 100), new Vector2(0, 0));
+            K.CloseX(card, () => Destroy(go));
+            invitePopup.AddComponent<PopIn>(); invitePopup.transform.SetSiblingIndex(hud.transform.childCount - 2);
+            AgniSfx.Play("sfx_reward_coin");
+        }
+
+        public AgniFriendsPanel OpenFriends(AgniFriendsPanel.Tab tab)
+        {
+            if (friendsPanel != null) Destroy(friendsPanel.gameObject);
+            friendsPanel = AgniFriendsPanel.Open(hud.transform, tab);
+            friendsPanel.transform.SetSiblingIndex(hud.transform.childCount - 2); // under the fade
+            friendsPanel.gameObject.AddComponent<PopIn>();
+            return friendsPanel;
+        }
+
+        void LobbyToast(string msg)
+        {
+            if (string.IsNullOrEmpty(msg)) return;
+            if (lobbyToast == null)
+            {
+                var bg = K.Img(hud.transform, "LobbyToast", "rr_24", Pal.A(Pal.Ink, 0.9f)); bg.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(980, 84), new Vector2(0.5f, 0));
+                lobbyToastT = K.Txt(bg.transform, "T", "", 32, Color.white, TextAnchor.MiddleCenter, true); lobbyToastT.rectTransform.Fill(20, 0, 20, 0); lobbyToast = bg.gameObject;
+            }
+            lobbyToastT.text = msg; lobbyToast.SetActive(true); lobbyToast.transform.SetSiblingIndex(hud.transform.childCount - 2); lobbyToastUntil = Time.unscaledTime + 2.6f;
+        }
+
+        float squadPoll;
+        void LateUpdate()
+        {
+            if (Time.unscaledTime > squadPoll) { squadPoll = Time.unscaledTime + 0.4f; RefreshSquad(); }
+            if (lobbyToast != null && lobbyToast.activeSelf && Time.unscaledTime > lobbyToastUntil) lobbyToast.SetActive(false);
+            var code = Agni.Social.AgniDeepLink.PendingCode;
+            if (!string.IsNullOrEmpty(code) && !starting)
+            {   // agniroyale://join?code=XXXXXX opened the game: jump straight into that squad
+                Agni.Social.AgniDeepLink.PendingCode = null; PartySvc.JoinByCode(code); OpenFriends(AgniFriendsPanel.Tab.Room).Toast(PartySvc.Status);
             }
         }
 
@@ -266,13 +375,13 @@ namespace Agni.UI
             var thumb = K.Img(mr, "MapThumb", "rr_16", Color.white); thumb.sprite = K.S("poster_s1"); thumb.type = Image.Type.Simple; thumb.preserveAspect = false;
             thumb.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(12, 0), new Vector2(150, 76), new Vector2(0, 0.5f));
             var mk = K.Txt(mr, "Kind", "MODE", 26, Pal.A(Pal.Gold, 0.9f), TextAnchor.UpperLeft, true); mk.rectTransform.Place(new Vector2(0, 1), new Vector2(180, -10), new Vector2(330, 30), new Vector2(0, 1));
-            modeLabel = K.Txt(mr, "Mode", "CLASSIC · BHARAT MAP", 30, Color.white, TextAnchor.LowerLeft, true); modeLabel.rectTransform.Place(new Vector2(0, 0), new Vector2(180, 14), new Vector2(340, 50), new Vector2(0, 0)); modeLabel.Shadow(Pal.A(Color.black, 0.5f), 0, -2);
+            modeLabel = K.Txt(mr, "Mode", "AKHADA BR · 50 KHILADI", 30, Color.white, TextAnchor.LowerLeft, true); modeLabel.rectTransform.Place(new Vector2(0, 0), new Vector2(180, 14), new Vector2(340, 50), new Vector2(0, 0)); modeLabel.Shadow(Pal.A(Color.black, 0.5f), 0, -2);
             var chev = K.Icon(mr, "ic_chevron", new Vector2(40, 40), Pal.Gold); chev.rectTransform.Place(new Vector2(1, 0.5f), new Vector2(-20, 0), new Vector2(40, 40), new Vector2(1, 0.5f));
 
             // START button
             var go = K.R("StartWrap", s).Place(new Vector2(1, 0), new Vector2(-46, 40), new Vector2(560, 160), new Vector2(1, 0));
             var glow = K.Img(go, "Glow", "glow", Pal.A(Pal.Hex("#FFB040"), 0.55f)); glow.rectTransform.Fill(-140, -90, -140, -90); glow.gameObject.AddComponent<Pulse>();
-            var start = K.Btn(go, "Start", "START", Pal.Saffron, 100, OnStart, "btn_40");
+            var start = K.Btn(go, "Start", "START", Pal.Saffron, 100, OnStart, "btn_40"); startLabel = start.transform.Find("Label").GetComponent<Text>(); squadSig = "~";
             var sr = (RectTransform)start.transform; sr.Fill();
             var stripes = K.Img(sr, "Stripes", "stripes", Pal.A(Color.white, 0.07f)); stripes.type = Image.Type.Tiled; stripes.rectTransform.Fill(12, 12, 12, 12); stripes.transform.SetSiblingIndex(2);
             var lbl = sr.Find("Label").GetComponent<Text>(); lbl.Outline(Pal.Hex("#8A2E06"), 4);
@@ -310,12 +419,13 @@ namespace Agni.UI
 
         public void OpenModes()
         {
+            if (modePanel != null) { Destroy(modePanel); modePanel = null; }
             if (modePanel == null)
             {
                 var card = K.Modal(hud.transform, "ModeSelect", new Vector2(1300, 600), out modePanel);
                 var title = K.Txt(card, "Title", "MODE CHUNO", 60, Pal.Ink, TextAnchor.MiddleLeft, true); title.rectTransform.Place(new Vector2(0, 1), new Vector2(60, -75), new Vector2(760, 100), new Vector2(0, 0.5f));
-                ModeCard(card, new Vector2(60, -190), "CLASSIC", "Bharat Map · 50 khiladi · Solo/Duo/Squad", true, () => { modeLabel.text = "CLASSIC · BHARAT MAP"; modePanel.SetActive(false); });
-                ModeCard(card, new Vector2(660, -190), "SQUAD 4v4", "Jaldi aa raha hai", false, null);
+                ModeCard(card, new Vector2(60, -190), "AKHADA BR", "Agni Akhada · 50 khiladi · Squad", true, () => { arena = true; modeLabel.text = "AKHADA BR · 50 KHILADI"; modePanel.SetActive(false); });
+                ModeCard(card, new Vector2(660, -190), "BHARAT MAP", "Map ghoomo · combat jaldi", true, () => { arena = false; modeLabel.text = "CLASSIC · BHARAT MAP"; modePanel.SetActive(false); });
                 K.CloseX(card, () => modePanel.SetActive(false));
                 modePanel.AddComponent<PopIn>();
                 modePanel.transform.SetSiblingIndex(hud.transform.childCount - 2);
@@ -325,13 +435,14 @@ namespace Agni.UI
 
         void ModeCard(RectTransform card, Vector2 pos, string title, string sub, bool enabled, System.Action pick)
         {
+            bool selected = enabled && ((title == "AKHADA BR") == arena);
             var b = K.Btn(card, "Mode_" + title, null, enabled ? Color.white : Pal.Hex("#CFC6BC"), 10, pick, "btn_24");
             var rt = (RectTransform)b.transform; rt.Place(new Vector2(0, 1), pos, new Vector2(580, 340), new Vector2(0, 1)); b.interactable = enabled;
             var img = K.Img(rt, "Art", null, Color.white); img.sprite = K.S(enabled ? "poster_s1" : "lobby_bg"); img.rectTransform.Fill(14, 110, 14, 14); img.color = enabled ? Color.white : new Color(0.5f, 0.5f, 0.5f);
             var t = K.Txt(rt, "Title", title, 44, enabled ? Pal.Ink : Pal.Hex("#7D7168"), TextAnchor.UpperLeft, true); t.rectTransform.Place(new Vector2(0, 0), new Vector2(24, 100), new Vector2(540, 50), new Vector2(0, 1));
             var st = K.Txt(rt, "Sub", sub, 28, enabled ? Pal.Hex("#6B4A3A") : Pal.Hex("#8F837A"), TextAnchor.UpperLeft); st.rectTransform.Place(new Vector2(0, 0), new Vector2(24, 50), new Vector2(540, 40), new Vector2(0, 1)); st.fontStyle = FontStyle.Bold;
-            if (enabled) { var sel = K.Img(rt, "Selected", "ol_24", Pal.Saffron); sel.rectTransform.Fill(-6, -6, -6, -6); var chk = K.Img(rt, "Tick", "btno_16", Color.white); chk.rectTransform.Place(new Vector2(1, 1), new Vector2(-24, -24), new Vector2(150, 46), new Vector2(1, 1)); var ct = K.Txt(chk.transform, "T", "CHUNA", 26, Color.white, TextAnchor.MiddleCenter, true); ct.rectTransform.Fill(); }
-            else { var lk = K.Icon(rt, "ic_lock", new Vector2(90, 90), Color.white); lk.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -90), new Vector2(90, 90), new Vector2(0.5f, 1)); }
+            if (selected) { var sel = K.Img(rt, "Selected", "ol_24", Pal.Saffron); sel.rectTransform.Fill(-6, -6, -6, -6); var chk = K.Img(rt, "Tick", "btno_16", Color.white); chk.rectTransform.Place(new Vector2(1, 1), new Vector2(-24, -24), new Vector2(150, 46), new Vector2(1, 1)); var ct = K.Txt(chk.transform, "T", "CHUNA", 26, Color.white, TextAnchor.MiddleCenter, true); ct.rectTransform.Fill(); }
+            else if (!enabled) { var lk = K.Icon(rt, "ic_lock", new Vector2(90, 90), Color.white); lk.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0, -90), new Vector2(90, 90), new Vector2(0.5f, 1)); }
         }
 
         public void OpenSettings()
@@ -342,14 +453,32 @@ namespace Agni.UI
 
         public void OnStart()
         {
-            if (starting) return; starting = true; AgniSfx.Play("sfx_confirm"); StartCoroutine(StartRoutine());
+            if (starting) return;
+            var p = PartySvc;
+            if (p.InParty && !p.IsLeader)
+            {   // squad member: START is the ready toggle; the leader takes everyone in
+                myReady = !myReady; p.SetReady(myReady); AgniSfx.Play("sfx_confirm"); squadSig = "~"; RefreshSquad();
+                LobbyToast(myReady ? "Ready! Leader START dabayega" : "Ready hata diya"); return;
+            }
+            if (p.InParty && p.IsLeader)
+            {
+                if (!p.AllReady) { LobbyToast("Squad me sab ready nahi hain"); return; }
+                starting = true; AgniSfx.Play("sfx_confirm"); StartCoroutine(PartyStart()); return;
+            }
+            starting = true; AgniSfx.Play("sfx_confirm"); StartCoroutine(StartRoutine());
+        }
+        IEnumerator PartyStart()
+        {
+            while (fade.alpha < 1) { fade.alpha = Mathf.MoveTowards(fade.alpha, 1, Time.unscaledDeltaTime * 3); yield return null; }
+            PartySvc.StartMatch(); // NGO loads the arena for the whole squad
         }
         IEnumerator StartRoutine()
         {
-            AsyncOperation op = Application.CanStreamedLevelBeLoaded(matchScene) ? SceneManager.LoadSceneAsync(matchScene) : null;
+            var scene = arena ? Agni.Net.AgniNetConfig.MatchScene : matchScene; // solo arena: AgniArenaBootstrap hosts an offline match with bots
+            AsyncOperation op = Application.CanStreamedLevelBeLoaded(scene) ? SceneManager.LoadSceneAsync(scene) : null;
             if (op != null) op.allowSceneActivation = false;
             while (fade.alpha < 1) { fade.alpha = Mathf.MoveTowards(fade.alpha, 1, Time.unscaledDeltaTime * 3); yield return null; }
-            if (op != null) op.allowSceneActivation = true; else { Debug.LogWarning("[AgniLobby] match scene not in build: " + matchScene); starting = false; fade.alpha = 0; }
+            if (op != null) op.allowSceneActivation = true; else { Debug.LogWarning("[AgniLobby] match scene not in build: " + scene); starting = false; fade.alpha = 0; }
         }
     }
 
