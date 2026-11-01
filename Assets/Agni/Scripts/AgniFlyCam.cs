@@ -91,7 +91,8 @@ public class AgniFlyCam : MonoBehaviour
         }
         if (ms != null && ms.rightButton.isPressed) look += ms.delta.ReadValue();
 
-        yaw += look.x * lookSpeed; pitch = Mathf.Clamp(pitch - look.y * lookSpeed, -85f, 89f);
+        float ls = lookSpeed * PlayerPrefs.GetFloat("agni.sens", 1f); // Settings ▸ Sensitivity
+        yaw += look.x * ls; pitch = Mathf.Clamp(pitch - look.y * ls, -85f, 89f);
         transform.rotation = Quaternion.Euler(pitch, yaw, 0);
 
         Vector3 p = transform.position;

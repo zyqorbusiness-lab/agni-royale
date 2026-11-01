@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Agni/Intro/Intro.unity
+    guid: 73a85804b3354fc0a9d7ccebb04cfb27
+  - enabled: 1
+    path: Assets/Agni/UI/Loading.unity
+    guid: f50ec9f6565bfb764ac51763a498fe45
+  - enabled: 1
+    path: Assets/Agni/UI/Lobby.unity
+    guid: 65e562b77ad5727d683f1fff2580a3c4
+  - enabled: 1
     path: Assets/Agni/Scenes/AgniMap.unity
     guid: d7c4166f53b66090db680c750a23e24f
   m_configObjects:

@@ -39,3 +39,6 @@ Notes: input uses the new Input System (`ENABLE_INPUT_SYSTEM`; legacy input also
 - Lilita One — © 2011 Juan Montoreano, SIL Open Font License 1.1 (Google Fonts).
 - Baloo 2 — © 2019 The Baloo 2 Project Authors (Ek Type), SIL Open Font License 1.1 (Google Fonts).
 - Mascot, animation and sound effects — original, made in code by Zyqor Studio for Agni Royale.
+
+## Status (Nov 1, step 2a)
+Wired: Intro.unity is build index 0 and `nextSceneName` = "Loading" (set by Agni.UI.EditorTools.AgniUISetup.CreateBatch). Credits lines added to CREDITS.md. Runs in the APK built 05:55Z.
