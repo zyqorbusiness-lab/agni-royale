@@ -95,6 +95,30 @@ namespace Agni.UI
             while ((lobby = FindAnyObjectByType<AgniLobby>()) == null && Time.realtimeSinceStartup - t0 < 60) yield return null;
             if (lobby == null) { Debug.LogError("[AgniUIProof] no lobby"); Quit(1); yield break; }
             string pre = Arg("-agniPrefix") ?? "";
+            if (Arg("-agniHeroes") != null)
+            {   // IMPORT v1: every hair-v3 hero on the lobby stage (face rig live: blink, look-at the camera, Happy on switch)
+                SetSize(3000, 1350); yield return new WaitForSecondsRealtime(2.5f);
+                var only = Arg("-agniHeroes");
+                for (int i = 0; i < Agni.Net.AgniHeroes.Names.Length; i++)
+                {
+                    if (only != "all" && !only.Contains(Agni.Net.AgniHeroes.Names[i])) continue;
+                    Agni.Net.AgniHeroes.Pref = i; lobby.StepHero(0); yield return new WaitForSecondsRealtime(0.9f);
+                    var fc = FindAnyObjectByType<AgniFace>(); Debug.Log("[AgniUIProof] hero " + Agni.Net.AgniHeroes.Names[i] + " face=" + (fc != null && fc.face != null ? fc.face.sharedMesh.blendShapeCount + " shapes, Smile=" + fc.face.GetBlendShapeWeight(fc.face.sharedMesh.GetBlendShapeIndex("Smile")).ToString("F0") + " Eyes_Happy=" + fc.face.GetBlendShapeWeight(fc.face.sharedMesh.GetBlendShapeIndex("Eyes_Happy")).ToString("F0") : "none"));
+                    yield return Shot(pre + "hero_" + Agni.Net.AgniHeroes.Names[i]);
+                    if (fc != null && fc.head != null)
+                    {   // face close-up: same lobby lights and backdrop, a proof camera at head height (the lobby camera is driven every frame)
+                        var lc = Camera.main; var hp = fc.head.position + Vector3.up * 0.06f; var toCam = lc.transform.position - hp; toCam.y = 0; toCam.Normalize();
+                        var fgo = new GameObject("FaceCam"); var cam = fgo.AddComponent<Camera>(); cam.clearFlags = lc.clearFlags; cam.backgroundColor = lc.backgroundColor; cam.nearClipPlane = 0.05f; cam.farClipPlane = 1600; cam.cullingMask = lc.cullingMask;
+                        cam.transform.position = hp + toCam * 1.0f + Vector3.up * 0.02f; cam.transform.LookAt(hp - Vector3.up * 0.1f); cam.fieldOfView = 30;
+                        fc.lookTarget = cam.transform; fc.SetExpression(i % 3 == 0 ? "Happy" : i % 3 == 1 ? "Soft_Smile" : "Confident_Smirk", 0.2f, 3f);
+                        var off = new System.Collections.Generic.List<Camera>(); foreach (var hc in Camera.allCameras) if (hc != cam) { hc.enabled = false; off.Add(hc); }
+                        SetSize(1080, 1350); yield return new WaitForSecondsRealtime(0.8f);
+                        yield return Shot(pre + "heroface_" + Agni.Net.AgniHeroes.Names[i]);
+                        foreach (var hc in off) hc.enabled = true; Destroy(fgo); fc.lookTarget = lc.transform; SetSize(3000, 1350);
+                    }
+                }
+                Quit(0); yield break;
+            }
             SetSize(2400, 1080); yield return new WaitForSecondsRealtime(2.5f);
             yield return Shot(pre + "lobby_2400x1080");
             SetSize(1920, 1080); yield return Frames(4); yield return new WaitForSecondsRealtime(0.3f);

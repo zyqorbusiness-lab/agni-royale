@@ -1,0 +1,407 @@
+{
+ "fps": 30,
+ "channels_order": [
+  "Blink",
+  "Blink_L",
+  "Blink_R",
+  "Eyes_Happy",
+  "Eyes_Wide",
+  "Eyes_Sad",
+  "Eyes_Angry",
+  "Eyes_Shy",
+  "Eye_Look_Up",
+  "Eye_Look_Down",
+  "Eye_Look_Left",
+  "Eye_Look_Right",
+  "Brow_Up",
+  "Brow_Angry",
+  "Brow_Sad",
+  "Brow_Up_L",
+  "Smile",
+  "Smile_Big",
+  "Smile_Smirk_L",
+  "Smile_Smirk_R",
+  "Frown",
+  "Mouth_O",
+  "Kiss_Pout",
+  "Angry_Teeth",
+  "Shy_Smile",
+  "Tongue_Out",
+  "A",
+  "I",
+  "U",
+  "E",
+  "O",
+  "Cheek_Blush",
+  "Tear"
+ ],
+ "presets": {
+  "Neutral": {},
+  "Soft_Smile": {
+   "Smile": 0.5,
+   "Brow_Up": 0.08
+  },
+  "Serene": {
+   "Smile": 0.4,
+   "Eyes_Shy": 0.28,
+   "Brow_Sad": 0.12
+  },
+  "Happy": {
+   "Eyes_Happy": 1,
+   "Smile": 1,
+   "Brow_Up": 0.3
+  },
+  "Laugh": {
+   "Eyes_Happy": 1,
+   "Smile_Big": 1,
+   "A": 0.35,
+   "Brow_Up": 0.4,
+   "Cheek_Blush": 1.0
+  },
+  "Big_Smile": {
+   "Smile_Big": 0.85,
+   "Eyes_Happy": 0.35,
+   "Brow_Up": 0.3,
+   "Cheek_Blush": 0.3
+  },
+  "Cheer": {
+   "Smile_Big": 0.7,
+   "A": 0.6,
+   "Eyes_Happy": 0.6,
+   "Brow_Up": 0.7
+  },
+  "Wink_Smile": {
+   "Blink_L": 1,
+   "Smile": 1,
+   "Brow_Up_L": 0.4
+  },
+  "Kiss": {
+   "Kiss_Pout": 1,
+   "Blink_R": 1,
+   "Brow_Up": 0.25,
+   "Cheek_Blush": 0.9
+  },
+  "Wink": {
+   "Blink_L": 1,
+   "Smile_Smirk_L": 0.6,
+   "Brow_Up_L": 0.3
+  },
+  "A_viseme": {
+   "A": 1
+  },
+  "Pout": {
+   "Kiss_Pout": 0.8,
+   "Brow_Up": 0.2,
+   "Eyes_Shy": 0.2
+  },
+  "Shy_Blush": {
+   "Shy_Smile": 1,
+   "Eyes_Shy": 1,
+   "Brow_Sad": 0.45,
+   "Cheek_Blush": 1
+  },
+  "Confident_Smirk": {
+   "Smile_Smirk_L": 1,
+   "Eyes_Angry": 0.6,
+   "Brow_Up_L": 1.0,
+   "Eye_Look_Right": 0.3
+  },
+  "Cool": {
+   "Smile_Smirk_L": 0.6,
+   "Eyes_Shy": 0.35,
+   "Brow_Up_L": 0.3
+  },
+  "Sultry_Calm": {
+   "Smile": 0.35,
+   "Eyes_Shy": 0.45,
+   "Brow_Up": 0.15
+  },
+  "Proud": {
+   "Smile": 0.8,
+   "Brow_Up": 0.35,
+   "Eyes_Happy": 0.25
+  },
+  "Focus": {
+   "Brow_Angry": 0.35,
+   "Eyes_Angry": 0.25,
+   "Smile": 0.15
+  },
+  "Effort": {
+   "Angry_Teeth": 0.6,
+   "Eyes_Angry": 0.6,
+   "Brow_Angry": 0.7
+  },
+  "Angry": {
+   "Eyes_Angry": 1,
+   "Brow_Angry": 1,
+   "Angry_Teeth": 1
+  },
+  "Sad": {
+   "Eyes_Sad": 1,
+   "Brow_Sad": 1,
+   "Frown": 1,
+   "Eye_Look_Down": 0.3
+  },
+  "Cry": {
+   "Eyes_Sad": 0.8,
+   "Brow_Sad": 1,
+   "Frown": 0.8,
+   "Tear": 1,
+   "Eyes_Shy": 0.3
+  },
+  "Surprised": {
+   "Eyes_Wide": 1,
+   "Brow_Up": 1,
+   "Mouth_O": 1
+  },
+  "Ooh": {
+   "Mouth_O": 0.6,
+   "Brow_Up": 0.5,
+   "Eyes_Wide": 0.3
+  },
+  "Playful_Tongue": {
+   "Tongue_Out": 1,
+   "Blink_L": 1,
+   "Brow_Up_L": 0.4,
+   "Smile": 0.3
+  },
+  "Robot": {
+   "Eyes_Wide": 0.25
+  },
+  "Eyes_Closed_Smile": {
+   "Eyes_Happy": 0.15,
+   "Blink": 0.9,
+   "Smile": 0.55
+  }
+ },
+ "tracks": {
+  "Idle_Blink": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 7
+  },
+  "Talk": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 10
+  },
+  "Flying_Kiss": {
+   "duration": 4.0,
+   "loop": false,
+   "frames": 121,
+   "channels": 13
+  },
+  "Sharmili": {
+   "duration": 5.0,
+   "loop": true,
+   "frames": 150,
+   "channels": 11
+  },
+  "Ankhon_Ka_Ishara": {
+   "duration": 4.0,
+   "loop": false,
+   "frames": 121,
+   "channels": 11
+  },
+  "Heart_Hands": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 9
+  },
+  "Diva_Pose": {
+   "duration": 8.0,
+   "loop": true,
+   "frames": 240,
+   "channels": 14
+  },
+  "Raat_Ki_Rani": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 10
+  },
+  "Dil_Nasha": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 14
+  },
+  "Chandni_Waltz": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 10
+  },
+  "Mayuri": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 8
+  },
+  "Mehfil_Mujra": {
+   "duration": 6.2,
+   "loop": false,
+   "frames": 187,
+   "channels": 9
+  },
+  "Sitara_Spin": {
+   "duration": 6.0,
+   "loop": false,
+   "frames": 181,
+   "channels": 12
+  },
+  "Golden_Pose": {
+   "duration": 8.0,
+   "loop": true,
+   "frames": 240,
+   "channels": 12
+  },
+  "Jhatka_Shake": {
+   "duration": 5.0,
+   "loop": true,
+   "frames": 150,
+   "channels": 13
+  },
+  "Gulabi_Ada": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 9
+  },
+  "Nakhra_Catwalk": {
+   "duration": 6.2,
+   "loop": true,
+   "frames": 186,
+   "channels": 12
+  },
+  "Baal_Jhatka": {
+   "duration": 5.0,
+   "loop": true,
+   "frames": 150,
+   "channels": 10
+  },
+  "Slow_Sway": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 8
+  },
+  "Dupatta_Leher": {
+   "duration": 6.0,
+   "loop": true,
+   "frames": 180,
+   "channels": 10
+  },
+  "Dil_Ka_Jhoola": {
+   "duration": 8.2,
+   "loop": false,
+   "frames": 247,
+   "channels": 15
+  },
+  "Saath_Naach": {
+   "duration": 6.4,
+   "loop": true,
+   "frames": 192,
+   "channels": 11
+  },
+  "Bhangra_Beat": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 10
+  },
+  "Thumka": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 10
+  },
+  "Disco_King": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 14
+  },
+  "Naagin": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 15
+  },
+  "Garba_Spin": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 8
+  },
+  "Victory_Jump": {
+   "duration": 3.0,
+   "loop": false,
+   "frames": 91,
+   "channels": 11
+  },
+  "Namaste_Bow": {
+   "duration": 3.6,
+   "loop": false,
+   "frames": 109,
+   "channels": 6
+  },
+  "Chest_Thump_Flex": {
+   "duration": 4.0,
+   "loop": false,
+   "frames": 121,
+   "channels": 12
+  },
+  "Wave_Hello": {
+   "duration": 3.3,
+   "loop": true,
+   "frames": 99,
+   "channels": 9
+  },
+  "Clap_Cheer": {
+   "duration": 4.0,
+   "loop": false,
+   "frames": 121,
+   "channels": 8
+  },
+  "Robot_Pop": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 8
+  },
+  "Heart_Sway": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 7
+  },
+  "Salsa_Step": {
+   "duration": 4.0,
+   "loop": true,
+   "frames": 120,
+   "channels": 12
+  },
+  "React_Hit": {
+   "duration": 0.8,
+   "loop": false,
+   "frames": 25,
+   "channels": 4
+  },
+  "React_Kill": {
+   "duration": 1.5,
+   "loop": false,
+   "frames": 46,
+   "channels": 7
+  },
+  "React_Win": {
+   "duration": 3.0,
+   "loop": false,
+   "frames": 91,
+   "channels": 12
+  }
+ }
+}

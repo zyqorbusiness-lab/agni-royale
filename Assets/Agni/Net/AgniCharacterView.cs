@@ -25,16 +25,35 @@ namespace Agni.Net
 
         void Build()
         {
-            var prefab = Resources.Load<GameObject>("AgniChars/Meera");
+            BuildModel();
+            p.Hero.OnValueChanged += (a, b) => { if (a != b && this != null) RebuildModel(); };
+            lastPos = p.transform.position;
+            // team mates get a soft blue name nameTag (enemies none)
+            var local = AgniPlayer.Local;
+            if (local != null && local != p && local.Team.Value == p.Team.Value) MakeTag();
+            p.Team.OnValueChanged += (a, b) => { var l = AgniPlayer.Local; if (nameTag == null && l != null && l != p && l.Team.Value == b) MakeTag(); if (nameTag != null && l != null && l.Team.Value != b) { Destroy(nameTag.gameObject); nameTag = null; } };
+        }
+        public void RebuildModel()
+        {
+            if (model != null) Destroy(model.gameObject); model = null; anim = null; hasClips = false; legsFound = false; shownGun = 255; face = null;
+            hips = spine1 = spine2 = rArm = rFore = rHand = lArm = head = null;
+            BuildModel(); if (p.Dead && model != null) model.gameObject.SetActive(false);
+        }
+        AgniFace face;
+        void BuildModel()
+        {
+            var heroPrefab = AgniHeroes.Prefab(p.Hero.Value);
+            var prefab = heroPrefab != null ? heroPrefab : Resources.Load<GameObject>("AgniChars/Meera");
             int q = Agni.UI.AgniMahal.Quality; if (q > 1) q = 1; // in-match: LOD1 at most (50 fighters)
             if (prefab != null)
             {
                 var ch = Instantiate(prefab, transform); ch.name = "Model"; model = ch.transform;
-                Agni.UI.AgniCharacterLook.Setup(ch, q);
+                if (heroPrefab != null) AgniHeroes.SetupInMatch(ch, Agni.UI.AgniMahal.Quality, p == AgniPlayer.Local); else Agni.UI.AgniCharacterLook.Setup(ch, q);
                 var an = ch.GetComponent<Animator>(); if (an != null) Destroy(an);
-                float h = Height(ch); if (h > 0.01f) ch.transform.localScale = Vector3.one * (1.72f / h);
+                if (heroPrefab != null) { ch.transform.localScale = Vector3.one * AgniHeroes.MatchScale; face = ch.GetComponentInChildren<AgniFace>(); }
+                else { float h = Height(ch); if (h > 0.01f) ch.transform.localScale = Vector3.one * (1.72f / h); }
                 hips = F(model, "Hips"); spine1 = F(model, "Spine1"); spine2 = F(model, "Spine2"); rArm = F(model, "RightArm"); rFore = F(model, "RightForeArm"); rHand = F(model, "RightHand"); lArm = F(model, "LeftArm"); head = F(model, "Head");
-                var rig = ch.transform.Find("Meera_Rig"); // clip FBXs import with Meera_Rig as their root, so the Animation lives on that node
+                Transform rig = null; foreach (Transform c in ch.transform) if (c.name.EndsWith("_Rig")) rig = c; // clips are recorded relative to <Hero>_Rig (same mixamorig bone names on all 10 heroes)
                 anim = (rig != null ? rig.gameObject : ch).AddComponent<Animation>(); anim.playAutomatically = false; anim.cullingType = AnimationCullingType.AlwaysAnimate;
                 foreach (var c in Clips)
                 {
@@ -56,11 +75,6 @@ namespace Agni.Net
             {   // fallback capsule
                 var cap = GameObject.CreatePrimitive(PrimitiveType.Capsule); Destroy(cap.GetComponent<Collider>()); cap.transform.SetParent(transform, false); cap.transform.localPosition = Vector3.up * 0.9f; model = cap.transform;
             }
-            lastPos = p.transform.position;
-            // team mates get a soft blue name nameTag (enemies none)
-            var local = AgniPlayer.Local;
-            if (local != null && local != p && local.Team.Value == p.Team.Value) MakeTag();
-            p.Team.OnValueChanged += (a, b) => { var l = AgniPlayer.Local; if (nameTag == null && l != null && l != p && l.Team.Value == b) MakeTag(); if (nameTag != null && l != null && l.Team.Value != b) { Destroy(nameTag.gameObject); nameTag = null; } };
         }
         public void RefreshTag() { var l = AgniPlayer.Local; if (nameTag == null && l != null && l != p && l.Team.Value == p.Team.Value) MakeTag(); }
         void MakeTag()

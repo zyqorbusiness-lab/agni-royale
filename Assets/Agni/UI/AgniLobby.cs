@@ -77,26 +77,7 @@ namespace Agni.UI
             var glowGo = new GameObject("FloorGlow"); glowGo.transform.SetParent(stage, false); glowGo.transform.localPosition = new Vector3(0, -0.23f, 0); glowGo.transform.localRotation = Quaternion.Euler(90, 0, 0);
             var gsr = glowGo.AddComponent<SpriteRenderer>(); gsr.sprite = K.S("glow"); gsr.color = Pal.A(Pal.Hex("#FF9A3A"), 0.55f); glowGo.transform.localScale = Vector3.one * 2.4f;
 
-            // character
-            var prefab = Resources.Load<GameObject>(characterResource); bool anime = prefab != null;
-            if (prefab == null) prefab = Resources.Load<GameObject>(fallbackCharacter);
-            if (prefab != null)
-            {
-                var ch = Instantiate(prefab, stage); ch.name = "Character"; character = ch.transform;
-                ch.transform.localPosition = new Vector3(-0.15f, 0.03f, 0); ch.transform.localRotation = Quaternion.Euler(0, 188, 0);
-                if (anime) AgniCharacterLook.Setup(ch, AgniMahal.Quality);
-                float h = Height(ch); float want = anime ? 1.62f : 1.32f; if (h > 0.01f) ch.transform.localScale = Vector3.one * (want / h);
-                if (anime) { ch.transform.localPosition = new Vector3(-0.05f, 0.03f, 0); ch.transform.localRotation = Quaternion.Euler(0, 172, 0); ch.AddComponent<AgniIdle>(); }
-                var an = ch.GetComponent<Animator>(); if (an != null) an.enabled = false;
-                if (!anime) foreach (var c in Resources.LoadAll<AnimationClip>(fallbackCharacter)) if (c.name.ToLower() == "idle") { idleClip = c; break; }
-                foreach (var r in ch.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-            }
-            else
-            {   // fallback capsule hero
-                var cap = GameObject.CreatePrimitive(PrimitiveType.Capsule); Destroy(cap.GetComponent<Collider>()); cap.name = "Character";
-                cap.transform.SetParent(stage, false); cap.transform.localPosition = new Vector3(0, 0.9f, 0); cap.transform.localScale = new Vector3(0.7f, 0.85f, 0.7f);
-                cap.GetComponent<MeshRenderer>().sharedMaterial = M(Pal.Saffron, 0.4f); character = cap.transform;
-            }
+            SpawnCharacter();
             // contact shadow
             var shGo = new GameObject("ContactShadow"); shGo.transform.SetParent(stage, false); shGo.transform.localPosition = new Vector3(-0.1f, 0.035f, 0); shGo.transform.localRotation = Quaternion.Euler(90, 0, 0);
             var ssr = shGo.AddComponent<SpriteRenderer>(); ssr.sprite = K.S("glow"); ssr.color = new Color(0.1f, 0.03f, 0, 0.55f); shGo.transform.localScale = new Vector3(0.9f, 0.6f, 1);
@@ -141,6 +122,50 @@ namespace Agni.UI
         }
 
         // ---------------- HUD
+        /// the lobby hero: the hair-v3 hero picked on this phone (AgniHeroes.Pref), else the old anime Meera, else the Kenney mini character
+        void SpawnCharacter()
+        {
+            if (character != null) { Destroy(character.gameObject); character = null; idleClip = null; }
+            var heroP = Agni.Net.AgniHeroes.Prefab(Agni.Net.AgniHeroes.Pref); bool v3 = heroP != null;
+            var prefab = v3 ? heroP : Resources.Load<GameObject>(characterResource); bool anime = prefab != null;
+            if (prefab == null) prefab = Resources.Load<GameObject>(fallbackCharacter);
+            if (prefab != null)
+            {
+                var ch = Instantiate(prefab, stage); ch.name = "Character"; character = ch.transform;
+                ch.transform.localPosition = new Vector3(-0.15f, 0.03f, 0); ch.transform.localRotation = Quaternion.Euler(0, 188, 0);
+                if (anime && !v3) AgniCharacterLook.Setup(ch, AgniMahal.Quality);
+                float h = Height(ch); float want = anime ? 1.62f : 1.32f; if (h > 0.01f) ch.transform.localScale = Vector3.one * (want / h);
+                if (v3) ch.transform.localScale = Vector3.one * 0.86f; // one scale for all heroes (Meera 1.89 m in the FBX -> 1.62 m on the stage): the men stand taller
+                var fc = ch.GetComponent<AgniFace>(); if (fc != null) { fc.lookTarget = cam.transform; fc.tier = AgniMahal.Quality <= 0 ? AgniFace.Tier.Low : AgniFace.Tier.High; fc.SetExpression("Soft_Smile", 0.4f); }
+                var lgp = ch.GetComponent<LODGroup>(); if (lgp != null) lgp.ForceLOD(0); // the lobby hero is always the full face
+                if (anime) { ch.transform.localPosition = new Vector3(-0.05f, 0.03f, 0); ch.transform.localRotation = Quaternion.Euler(0, 172, 0); ch.AddComponent<AgniIdle>(); }
+                var an = ch.GetComponent<Animator>(); if (an != null) an.enabled = false;
+                if (!anime) foreach (var c in Resources.LoadAll<AnimationClip>(fallbackCharacter)) if (c.name.ToLower() == "idle") { idleClip = c; break; }
+                foreach (var r in ch.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            }
+            else
+            {   // fallback capsule hero
+                var cap = GameObject.CreatePrimitive(PrimitiveType.Capsule); Destroy(cap.GetComponent<Collider>()); cap.name = "Character";
+                cap.transform.SetParent(stage, false); cap.transform.localPosition = new Vector3(0, 0.9f, 0); cap.transform.localScale = new Vector3(0.7f, 0.85f, 0.7f);
+                var cm = new Material(Shader.Find("Universal Render Pipeline/Lit")); cm.SetColor("_BaseColor", Pal.Saffron); cap.GetComponent<MeshRenderer>().sharedMaterial = cm; character = cap.transform;
+            }
+        }
+        /// hero picker under the stage: < NAME >
+        Text heroName;
+        void HeroPicker(RectTransform s)
+        {
+            var bar = K.R("HeroPicker", s).Place(new Vector2(0.5f, 0), new Vector2(-640, 150), new Vector2(440, 88), new Vector2(0.5f, 0));
+            var bg = K.Img(bar, "Bg", "rr_40", Pal.A(Pal.Navy, 0.72f)); bg.rectTransform.Fill();
+            heroName = K.Txt(bar, "Name", Agni.Net.AgniHeroes.Display[Agni.Net.AgniHeroes.Pref].ToUpper(), 44, Color.white, TextAnchor.MiddleCenter, true); heroName.rectTransform.Fill(96, 0, 96, 0); heroName.Shadow(Pal.A(Color.black, 0.5f), 0, -3);
+            var prev = K.Btn(bar, "Prev", "<", Pal.Saffron, 52, () => StepHero(-1), "btn_40"); ((RectTransform)prev.transform).Place(new Vector2(0, 0.5f), new Vector2(8, 0), new Vector2(84, 84), new Vector2(0, 0.5f));
+            var next = K.Btn(bar, "Next", ">", Pal.Saffron, 52, () => StepHero(1), "btn_40"); ((RectTransform)next.transform).Place(new Vector2(1, 0.5f), new Vector2(-8, 0), new Vector2(84, 84), new Vector2(1, 0.5f));
+        }
+        public void StepHero(int d)
+        {
+            int n = Agni.Net.AgniHeroes.Names.Length; Agni.Net.AgniHeroes.Pref = ((Agni.Net.AgniHeroes.Pref + d) % n + n) % n;
+            SpawnCharacter(); if (heroName != null) heroName.text = Agni.Net.AgniHeroes.Display[Agni.Net.AgniHeroes.Pref].ToUpper();
+            var fc = character != null ? character.GetComponent<AgniFace>() : null; if (fc != null) fc.SetExpression("Happy", 0.25f, 1.6f);
+        }
         void BuildHud()
         {
             // (the old flat painted backdrop canvas is gone: the 3D Mahal is the background now)
@@ -160,6 +185,7 @@ namespace Agni.UI
             Squad(s);
             StartArea(s);
             SeasonTag(s);
+            HeroPicker(s);
 
             var f = K.Img(hud.transform, "Fade", null, Color.black); f.rectTransform.Fill(); fade = f.gameObject.AddComponent<CanvasGroup>(); fade.alpha = 1; fade.blocksRaycasts = false;
             StartCoroutine(FadeIn());

@@ -22,6 +22,7 @@ namespace Agni.Net
         {   // graphics tier for a test run must be in place before the arena builds its terrain
             if (string.IsNullOrEmpty(AgniNetConfig.Arg("-agniShot"))) return;
             var g = AgniNetConfig.Arg("-agniGfx"); if (g != null && int.TryParse(g, out int gi)) { PlayerPrefs.SetInt("agni.gfx", gi); PlayerPrefs.Save(); }
+            var hn = AgniNetConfig.Arg("-agniHero"); if (hn != null) { int hi = System.Array.IndexOf(AgniHeroes.Names, hn); if (hi >= 0) AgniHeroes.Pref = hi; }
         }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -326,6 +327,8 @@ namespace Agni.Net
             var lp = AgniLocalPlayer.Instance; var me = lp.P;
             int bots = 0, skinned = 0; foreach (var o in AgniPlayer.All) if (o != null && o.IsBot.Value) { bots++; if (o.GunSkins.Value != 0) skinned++; }
             Log("bots " + bots + " with a premium skin on at least one gun: " + skinned + "; my packed skins=" + me.GunSkins.Value);
+            var hc = new int[AgniHeroes.Names.Length]; int built = 0, withClips = 0; foreach (var o in AgniPlayer.All) if (o != null) { hc[o.Hero.Value]++; var vw = o.transform.Find("View/Model"); if (vw != null) { built++; var an = vw.GetComponentInChildren<Animation>(); if (an != null && an.GetClipCount() > 0) withClips++; } }
+            Log("heroes in match " + string.Join(" ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0, hc.Length), i => AgniHeroes.Names[i] + ":" + hc[i])) + " | views built " + built + " with clips " + withClips + " | me=" + AgniHeroes.Names[me.Hero.Value]);
             string tally = ""; foreach (var g in AgniGunSkins.Guns) tally += g + ":" + (AgniGunSkins.Count(g) - 1) + " "; Log("premium skins per gun " + tally);
             var nearName = AgniNetConfig.Arg("-agniLineupNear") ?? "Rann Safed"; var anchor = Agni.Import.AgniLandmarks.Table[0].pos;
             foreach (var vg in AgniVillages.Villages) if (vg.name == nearName) anchor = new Vector3(vg.c.x, 0, vg.c.y);

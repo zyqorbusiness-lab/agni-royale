@@ -91,3 +91,15 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - Proofs: 17_gun_skin_in_hand_agnidev.jpg, 18_gun_mythic_makara_lv3.jpg, 19_gun_armoury_legendaries.jpg, 20_gun_rare_neel_toofan.jpg.
 - Not done / weak: no armoury screen in the lobby to pick skins yet (prefs exist, UI missing); UV scroll / flow animation, per-skin muzzle flash and kill effects are listed in the json but not played;
   several Legendary skins share the same lava-crack look (that is the source art); the 50+ generated example skins (_generated_examples) were not imported.
+
+## Block 4 — HEROES with hair v3 (in: lobby + match)
+- All 10 heroes from characters_hair_v3/<Name>/<Name>_HairV3.fbx (source folders untouched; FBX + textures copied into Assets/Agni/Import/Heroes/<Name>/).
+  Prefabs in Resources/AgniImport/Heroes/<Name>.prefab, built by Agni.Import.EditorTools.AgniImportHeroes.Batch:
+  toon materials (AnimeToonOutline for skin/clothes/hair, unlit cut-out eyes and lashes, BrowOverHair for the brows, a glossy cornea), LOD0-2, AgniFace on the root.
+- AgniFace.cs is the unchanged copy from characters_face/ (byte-identical). Every hero: 33 blendshapes on LOD0, Eye_L/Eye_R, head; idle blink track, talk track, 33 emote face tracks, 3 reactions.
+- LOBBY: the picked hero stands on the stage with the face live (auto-blink, eyes follow the camera, soft smile; Happy when you switch). New picker under the stage: < NAME > (PlayerPrefs agni.hero).
+- MATCH: AgniPlayer.Hero (networked byte). The phone's pick is sent on spawn; bots get a random hero. The body clips play on all 10 rigs (same mixamorig bones).
+  Last run: 50 fighters, all 10 heroes present (4-7 each), 50/50 views with animation clips. LOW graphics = LOD2 and the face rig is off; NORMAL+ = face on LOD0 up close.
+- Proofs: 21_lobby_hero_v3_meera.jpg, 22_hero_face_rig_meera_happy.jpg, 23_heroes_v3_all10.jpg, 24_match_hero_kabir_agnidev.jpg.
+- Weak spots: hair is still card/cap based (source README rates it ~3/10 vs Genshin); the lobby hero is small in the wide shot; several heroes are barefoot in the source art;
+  spring (jiggle) bones are imported but not simulated yet (no hair sway); the arms in the lobby idle are the procedural AgniIdle, not an authored clip.
