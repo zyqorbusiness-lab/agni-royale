@@ -72,6 +72,7 @@ namespace Agni.Net
             if (IsOwner && !IsBot.Value && NetworkManager.IsClient) { Local = this; AgniLocalPlayer.Create(this); }
             Life.OnValueChanged += (a, b) => { if (view != null) view.OnLife((LifeState)a, (LifeState)b); };
             if (!IsServer) cc.enabled = true; // keep the capsule for client-side raycasts (arc preview, camera)
+            SkinsOnSpawn();
         }
         public override void OnNetworkDespawn() { All.Remove(this); if (Local == this) Local = null; }
 

@@ -45,6 +45,7 @@ namespace Agni.Net
             else if (mode == "loot") yield return Loot();
             else if (mode == "india") yield return India();
             else if (mode == "drive") yield return Drive();
+            else if (mode == "gunskin") yield return GunSkin();
             else if (mode == "netloot") yield return NetLoot();
             else yield return Grenade();
             Log("done"); Quit(0);
@@ -317,6 +318,61 @@ namespace Agni.Net
                 lp.freeCam = false; HudOn(true);
             }
         }
+
+        // ------------------------------------------------------------------ gunskin: Blender guns + premium skins in the hero's hands, and an armoury sheet
+        IEnumerator GunSkin()
+        {
+            yield return WaitPlaying(2.0f);
+            var lp = AgniLocalPlayer.Instance; var me = lp.P;
+            int bots = 0, skinned = 0; foreach (var o in AgniPlayer.All) if (o != null && o.IsBot.Value) { bots++; if (o.GunSkins.Value != 0) skinned++; }
+            Log("bots " + bots + " with a premium skin on at least one gun: " + skinned + "; my packed skins=" + me.GunSkins.Value);
+            string tally = ""; foreach (var g in AgniGunSkins.Guns) tally += g + ":" + (AgniGunSkins.Count(g) - 1) + " "; Log("premium skins per gun " + tally);
+            var nearName = AgniNetConfig.Arg("-agniLineupNear") ?? "Rann Safed"; var anchor = Agni.Import.AgniLandmarks.Table[0].pos;
+            foreach (var vg in AgniVillages.Villages) if (vg.name == nearName) anchor = new Vector3(vg.c.x, 0, vg.c.y);
+            var c0 = OpenFlat(anchor, vRad(nearName) + 30f, vRad(nearName) + 400f, 10f);
+            var sun = RenderSettings.sun != null ? Vector3.ProjectOnPlane(RenderSettings.sun.transform.forward, Vector3.up).normalized : Vector3.forward;
+            float yaw = Quaternion.LookRotation(sun.sqrMagnitude > 0.1f ? sun : Vector3.forward).eulerAngles.y + 200f; // face away from the sun a bit so the gun is lit
+            me.ServerTeleport(c0, yaw); yield return new WaitForSecondsRealtime(0.8f);
+            me.ServerTake(ItemId.Agni47, 1, true, new List<LootStack>()); yield return new WaitForSecondsRealtime(0.5f);
+            Log("held=" + me.Held + " heldGun=" + me.HeldGun.Value);
+            lp.Yaw = yaw; lp.Pitch = 0; HudOn(false);
+            int[] codes = { 0, 1, 2, 3, 6 };
+            foreach (var code in codes)
+            {
+                me.GunSkins.Value = AgniGunSkins.Pack(i => i == 0 ? code : 0); yield return Frames(6);
+                var view = me.transform.Find("View"); Transform hand = null; if (view != null) foreach (var t in view.GetComponentsInChildren<Transform>()) if (t.name.EndsWith("RightHand")) { hand = t; break; }
+                Transform held = null; if (view != null) foreach (Transform t in view) if (t.name.StartsWith("Held_")) held = t;
+                var f = Quaternion.Euler(0, yaw, 0) * Vector3.forward; var r = Quaternion.Euler(0, yaw, 0) * Vector3.right;
+                var focus = held != null ? held.position + f * 0.25f : me.transform.position + Vector3.up * 1.35f;
+                lp.freeCam = true; lp.Cam.fieldOfView = 34;
+                LookFrom(focus + f * 1.35f + r * 1.15f + Vector3.up * 0.25f, focus + Vector3.up * 0.05f); yield return Frames(4);
+                var mr = held != null ? held.GetComponentInChildren<Renderer>() : null;
+                Log("skin " + code + " " + AgniGunSkins.Name("AGNI_47", code) + " (" + AgniGunSkins.Tier("AGNI_47", code) + ") mat=" + (mr != null ? mr.sharedMaterial.name : "none") + " evo parts on=" + (held != null && held.Find("AGNI_47/Evo") != null ? "yes" : held != null && held.GetComponentsInChildren<Transform>().Length > 0 && FindDeep(held, "Evo") ? "yes" : "no"));
+                yield return Shot("gun_hand_" + code);
+            }
+            // full-body: hero holding the Agni Dev skin
+            me.GunSkins.Value = AgniGunSkins.Pack(i => i == 0 ? 3 : 0); yield return Frames(6);
+            {
+                var f = Quaternion.Euler(0, yaw, 0) * Vector3.forward; var r = Quaternion.Euler(0, yaw, 0) * Vector3.right;
+                lp.Cam.fieldOfView = 40; LookFrom(me.transform.position + f * 3.2f + r * 1.6f + Vector3.up * 1.5f, me.transform.position + Vector3.up * 1.15f); yield return Frames(4); yield return Shot("gun_hero_agnidev");
+            }
+            // armoury sheet: all 6 guns, top premium skin each, floating in front of the camera
+            var cam = lp.Cam.transform; var basePos = c0 + Vector3.up * 30f; cam.SetPositionAndRotation(basePos, Quaternion.Euler(-6, yaw, 0)); lp.Cam.fieldOfView = 40;
+            var made = new List<GameObject>(); ItemId[] ids = { ItemId.Agni47, ItemId.Bijli, ItemId.Shikari, ItemId.Dhamaka, ItemId.Bhari, ItemId.Chota };
+            for (int i = 0; i < ids.Length; i++)
+            {
+                var gd = AgniItems.Gun(ids[i]); int code = Mathf.Min(3, AgniGunSkins.Count(gd.model) - 1);
+                var go = AgniLootView.GunModel(ids[i], null, false, code); if (go == null) continue; made.Add(go);
+                var ax = go.GetComponent<AgniLootView.GunAxes>(); float len = Mathf.Max(0.2f, gd.length);
+                var p = cam.position + cam.forward * 4.3f + cam.up * (1.12f - i * 0.45f) - cam.right * (len * 0.45f);
+                go.transform.SetPositionAndRotation(p, Quaternion.LookRotation(cam.right, cam.up) * (ax != null ? ax.fix : Quaternion.identity));
+                Log("armoury " + gd.model + " skin " + AgniGunSkins.Name(gd.model, code) + " (" + AgniGunSkins.Tier(gd.model, code) + ")");
+            }
+            yield return Frames(6); yield return Shot("gun_armoury");
+            foreach (var g in made) Destroy(g);
+            lp.freeCam = false; HudOn(true);
+        }
+        static bool FindDeep(Transform t, string n) { foreach (var c in t.GetComponentsInChildren<Transform>(true)) if (c.name == n) return true; return false; }
         IEnumerator Loot()
         {
             yield return WaitPlaying(2.0f);

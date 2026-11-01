@@ -80,3 +80,14 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - Proofs: 13_vehicle_lineup_rann.jpg (6 land vehicles on the Rann), 14_hero_driving_jeep.jpg, 15_jeep_follow_cam.jpg, 16_naav_boat_river.jpg.
 - Weak spots: seated pose is procedural (legs bent, hands to the wheel), not an authored sit clip; no engine sound or exhaust/dust FX yet; bike balance is a code assist;
   no vehicle damage/explosions; not tested with two real phones yet (host only in the editor).
+
+## Block 3 — GUNS + SKINS (in)
+- The 6 loot guns use the Blender v2 models (AGNI_47, BIJLI_SMG, SHIKARI_98, DHAMAKA_12, BHARI_LMG, CHOTA) with the new PBR base finish (albedo + metal/smoothness + normal).
+- 24 premium skins from skins_premium.json: per gun Rare / Epic / Legendary, plus 2 Mythic evolution skins (AGNI_47 Makara Raj Lv1-3, SHIKARI_98 Mayur Raj Lv1-3) whose
+  Lv2/Lv3 add their attachment meshes (e.g. wings, makara head) at the gun root. Emission skins glow (tinted, intensity capped at 3 for phones).
+- Networked: each fighter carries one skin byte per gun (AgniPlayer.GunSkins); owners send their picks on spawn (PlayerPrefs agni.gskin.<GUN>), bots get random skins
+  (last run 49/49 bots had at least one premium skin). Guns lying on the ground show the Standard finish.
+- Play-mode test (AgniShot -agniShotMode gunskin): the hero holds AGNI_47 in Standard, Neel Toofan, Suvarna Mehndi, Agni Dev and Makara Raj Lv3 (evo parts on); all 6 guns with their Legendary skin.
+- Proofs: 17_gun_skin_in_hand_agnidev.jpg, 18_gun_mythic_makara_lv3.jpg, 19_gun_armoury_legendaries.jpg, 20_gun_rare_neel_toofan.jpg.
+- Not done / weak: no armoury screen in the lobby to pick skins yet (prefs exist, UI missing); UV scroll / flow animation, per-skin muzzle flash and kill effects are listed in the json but not played;
+  several Legendary skins share the same lava-crack look (that is the source art); the 50+ generated example skins (_generated_examples) were not imported.

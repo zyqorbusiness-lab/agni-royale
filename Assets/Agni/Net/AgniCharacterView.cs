@@ -70,11 +70,12 @@ namespace Agni.Net
             nameTag.fontSize = 48; nameTag.characterSize = 0.035f; nameTag.anchor = TextAnchor.MiddleCenter; nameTag.color = new Color(0.55f, 0.85f, 1f);
         }
         byte shownGun = 255; float punchT = -9; Vector3 palmOffset = Vector3.zero; bool HasGun => shownGun != 0 && shownGun != 255;
+        ulong shownSkin;
         void AttachGun(ItemId id)
         {
             shownGun = (byte)id; if (gun != null) Destroy(gun); gun = null;
             if (id == ItemId.None || rHand == null) return;
-            gun = AgniLootView.GunModel(id, transform, false);
+            shownSkin = p.GunSkins.Value; gun = AgniLootView.GunModel(id, transform, false, AgniGunSkins.Unpack(p.GunSkins.Value, AgniItems.Gun(id).model));
             if (gun != null) { gun.name = "Held_" + id; gun.transform.localScale = Vector3.one; }
         }
         /// bend the arms so the hands come up to a shoulder-aim (the rifle clips are hip-ish); keeps the grip at the right palm
@@ -124,7 +125,7 @@ namespace Agni.Net
             speed = Mathf.Lerp(speed, d.magnitude / Mathf.Max(0.0001f, Time.deltaTime), 0.2f);
             if (p.Dead) { if (deathT > 0 && Time.time - deathT > 4f) model.gameObject.SetActive(false); return; }
             bool holdingThrow = p.Slot.Value == 1 || Time.time - throwT < 0.6f;
-            if (shownGun != p.HeldGun.Value) AttachGun((ItemId)p.HeldGun.Value);
+            if (shownGun != p.HeldGun.Value || shownSkin != p.GunSkins.Value) AttachGun((ItemId)p.HeldGun.Value);
             if (gun != null) gun.SetActive(!holdingThrow && !p.Knocked && !p.Driving);
             if (holdingThrow && rHand != null && (held == null || heldKind != (ThrowKind)p.Sel.Value) && Time.time - throwT > 0.45f)
             {

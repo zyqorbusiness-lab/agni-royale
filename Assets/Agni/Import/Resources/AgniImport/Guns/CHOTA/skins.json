@@ -1,0 +1,52 @@
+{
+ "gun": "CHOTA",
+ "premium_skins": [
+  {
+   "id": "CHOTA_KesarBagh",
+   "name": "Kesar Bagh",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/CHOTA/skins/KesarBagh/T_CHOTA_KesarBagh_Albedo.png",
+    "MetallicSmoothness": "weapons/CHOTA/skins/KesarBagh/T_CHOTA_KesarBagh_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "saffron flash",
+   "kill_effect": "tiger claw marks"
+  },
+  {
+   "id": "CHOTA_SoneKiChidiya",
+   "name": "Sone Ki Chidiya",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/CHOTA/skins/SoneKiChidiya/T_CHOTA_SoneKiChidiya_Albedo.png",
+    "MetallicSmoothness": "weapons/CHOTA/skins/SoneKiChidiya/T_CHOTA_SoneKiChidiya_MetallicSmoothness.png",
+    "Emission": "weapons/CHOTA/skins/SoneKiChidiya/T_CHOTA_SoneKiChidiya_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "gold flash",
+   "kill_effect": "gold feathers"
+  },
+  {
+   "id": "CHOTA_Angaara",
+   "name": "Angaara",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/CHOTA/skins/Angaara/T_CHOTA_Angaara_Albedo.png",
+    "MetallicSmoothness": "weapons/CHOTA/skins/Angaara/T_CHOTA_Angaara_MetallicSmoothness.png",
+    "Emission": "weapons/CHOTA/skins/Angaara/T_CHOTA_Angaara_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "orange fire",
+   "kill_effect": "ember burst"
+  }
+ ]
+}

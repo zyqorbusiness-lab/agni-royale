@@ -39,7 +39,7 @@ namespace Agni.Net
 
         // ------------------------------------------------------------ guns (shared with the fighter's hands)
         static readonly Dictionary<string, Material> gunMats = new Dictionary<string, Material>();
-        public static GameObject GunModel(ItemId gun, Transform parent, bool lowPoly)
+        public static GameObject GunModel(ItemId gun, Transform parent, bool lowPoly, int skin = 0)
         {
             var gd = AgniItems.Gun(gun); var src = Resources.Load<GameObject>("AgniNet/Weapons/" + gd.model) ?? Resources.Load<GameObject>("AgniNet/Weapons/AGNI_47");
             if (src == null) return null;
@@ -49,6 +49,7 @@ namespace Agni.Net
                 var tex = Resources.Load<Texture2D>("AgniNet/Weapons/T_" + gd.model + "_Albedo") ?? Resources.Load<Texture2D>("AgniNet/Weapons/T_AGNI_47_Albedo");
                 m = new Material(Shader.Find("Universal Render Pipeline/Lit")); m.SetTexture("_BaseMap", tex); m.SetFloat("_Smoothness", 0.42f); m.SetFloat("_Metallic", 0.35f); gunMats[gd.model] = m;
             }
+            var bm = AgniGunSkins.Mat(gd.model, skin); if (bm != null) m = bm; // the Blender base finish / premium skin (falls back to the old albedo)
             go.AddComponent<GunAxes>().Measure();
             var lg = go.GetComponent<LODGroup>(); if (lg != null) Object.Destroy(lg);
             foreach (var r in go.GetComponentsInChildren<Renderer>())
@@ -57,6 +58,7 @@ namespace Agni.Net
                 bool l1 = r.name.Contains("LOD1"), l2 = r.name.Contains("LOD2"), l0 = !l1 && !l2;
                 r.enabled = lowPoly ? (l2 || (l0 && !HasLod(go, "LOD2"))) : l0;
             }
+            if (skin > 0 && !lowPoly) AgniGunSkins.AddAttachments(go, gd.model, skin, m);
             return go;
         }
         /// the FBX importer may rotate the model root: measure the real barrel (grip → Muzzle) and up (→ ScopeMount) once,

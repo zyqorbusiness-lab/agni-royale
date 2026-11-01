@@ -1,0 +1,120 @@
+{
+ "gun": "SHIKARI_98",
+ "premium_skins": [
+  {
+   "id": "SHIKARI_98_HaraShikar",
+   "name": "Hara Shikar",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/HaraShikar/T_SHIKARI_98_HaraShikar_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/HaraShikar/T_SHIKARI_98_HaraShikar_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "warm white flash",
+   "kill_effect": "leaf scatter"
+  },
+  {
+   "id": "SHIKARI_98_SuvarnaMor",
+   "name": "Suvarna Mor",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/SuvarnaMor/T_SHIKARI_98_SuvarnaMor_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/SuvarnaMor/T_SHIKARI_98_SuvarnaMor_MetallicSmoothness.png",
+    "Emission": "weapons/SHIKARI_98/skins/SuvarnaMor/T_SHIKARI_98_SuvarnaMor_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "gold-teal flash",
+   "kill_effect": "peacock-feather sparkle"
+  },
+  {
+   "id": "SHIKARI_98_Jwalamukhi",
+   "name": "Jwalamukhi",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/Jwalamukhi/T_SHIKARI_98_Jwalamukhi_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/Jwalamukhi/T_SHIKARI_98_Jwalamukhi_MetallicSmoothness.png",
+    "Emission": "weapons/SHIKARI_98/skins/Jwalamukhi/T_SHIKARI_98_Jwalamukhi_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "magenta fire muzzle",
+   "kill_effect": "pink lava splash"
+  },
+  {
+   "id": "SHIKARI_98_MayurRaj_Lv1",
+   "name": "Mayur Raj Lv1",
+   "tier": "Mythic",
+   "evo_level": 1,
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv1_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv1_MetallicSmoothness.png",
+    "Emission": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv1_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "emission_tint": "#20d0a0",
+   "uv_scroll": [
+    0.0,
+    0.02
+   ],
+   "attachments": [],
+   "attachment_fbx": "weapons/SHIKARI_98/skins/MayurRaj/SHIKARI_98_MayurRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 jade / Lv2 sapphire / Lv3 lime-gold peacock flash",
+   "kill_effect": "Lv3: feather fan burst"
+  },
+  {
+   "id": "SHIKARI_98_MayurRaj_Lv2",
+   "name": "Mayur Raj Lv2",
+   "tier": "Mythic",
+   "evo_level": 2,
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv2_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv2_MetallicSmoothness.png",
+    "Emission": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv2_Emission.png"
+   },
+   "emission_intensity": 3.5,
+   "emission_tint": "#40a0ff",
+   "uv_scroll": [
+    0.0,
+    0.05
+   ],
+   "attachments": [
+    "Wings"
+   ],
+   "attachment_fbx": "weapons/SHIKARI_98/skins/MayurRaj/SHIKARI_98_MayurRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 jade / Lv2 sapphire / Lv3 lime-gold peacock flash",
+   "kill_effect": "Lv3: feather fan burst"
+  },
+  {
+   "id": "SHIKARI_98_MayurRaj_Lv3",
+   "name": "Mayur Raj Lv3",
+   "tier": "Mythic",
+   "evo_level": 3,
+   "textures": {
+    "Albedo": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv3_Albedo.png",
+    "MetallicSmoothness": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv3_MetallicSmoothness.png",
+    "Emission": "weapons/SHIKARI_98/skins/MayurRaj/T_SHIKARI_98_MayurRaj_Lv3_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "emission_tint": "#b6ff3a",
+   "uv_scroll": [
+    0.02,
+    0.09
+   ],
+   "attachments": [
+    "Wings",
+    "Head"
+   ],
+   "attachment_fbx": "weapons/SHIKARI_98/skins/MayurRaj/SHIKARI_98_MayurRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 jade / Lv2 sapphire / Lv3 lime-gold peacock flash",
+   "kill_effect": "Lv3: feather fan burst"
+  }
+ ]
+}

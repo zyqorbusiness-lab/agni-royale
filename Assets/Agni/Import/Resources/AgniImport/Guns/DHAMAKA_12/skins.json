@@ -1,0 +1,52 @@
+{
+ "gun": "DHAMAKA_12",
+ "premium_skins": [
+  {
+   "id": "DHAMAKA_12_Registan",
+   "name": "Registan",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/DHAMAKA_12/skins/Registan/T_DHAMAKA_12_Registan_Albedo.png",
+    "MetallicSmoothness": "weapons/DHAMAKA_12/skins/Registan/T_DHAMAKA_12_Registan_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "amber flash",
+   "kill_effect": "sand puff"
+  },
+  {
+   "id": "DHAMAKA_12_ShahiNakkashi",
+   "name": "Shahi Nakkashi",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/DHAMAKA_12/skins/ShahiNakkashi/T_DHAMAKA_12_ShahiNakkashi_Albedo.png",
+    "MetallicSmoothness": "weapons/DHAMAKA_12/skins/ShahiNakkashi/T_DHAMAKA_12_ShahiNakkashi_MetallicSmoothness.png",
+    "Emission": "weapons/DHAMAKA_12/skins/ShahiNakkashi/T_DHAMAKA_12_ShahiNakkashi_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "gold flash",
+   "kill_effect": "gold coins"
+  },
+  {
+   "id": "DHAMAKA_12_Bhatti",
+   "name": "Bhatti",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/DHAMAKA_12/skins/Bhatti/T_DHAMAKA_12_Bhatti_Albedo.png",
+    "MetallicSmoothness": "weapons/DHAMAKA_12/skins/Bhatti/T_DHAMAKA_12_Bhatti_MetallicSmoothness.png",
+    "Emission": "weapons/DHAMAKA_12/skins/Bhatti/T_DHAMAKA_12_Bhatti_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "orange fire burst",
+   "kill_effect": "ember burst"
+  }
+ ]
+}

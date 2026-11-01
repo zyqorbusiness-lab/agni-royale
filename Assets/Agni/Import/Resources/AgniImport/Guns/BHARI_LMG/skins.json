@@ -1,0 +1,52 @@
+{
+ "gun": "BHARI_LMG",
+ "premium_skins": [
+  {
+   "id": "BHARI_LMG_BarfPahad",
+   "name": "Barf Pahad",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/BHARI_LMG/skins/BarfPahad/T_BHARI_LMG_BarfPahad_Albedo.png",
+    "MetallicSmoothness": "weapons/BHARI_LMG/skins/BarfPahad/T_BHARI_LMG_BarfPahad_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "cold white flash",
+   "kill_effect": "snow puff"
+  },
+  {
+   "id": "BHARI_LMG_RajDarbar",
+   "name": "Raj Darbar",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/BHARI_LMG/skins/RajDarbar/T_BHARI_LMG_RajDarbar_Albedo.png",
+    "MetallicSmoothness": "weapons/BHARI_LMG/skins/RajDarbar/T_BHARI_LMG_RajDarbar_MetallicSmoothness.png",
+    "Emission": "weapons/BHARI_LMG/skins/RajDarbar/T_BHARI_LMG_RajDarbar_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "gold flash",
+   "kill_effect": "gold coins"
+  },
+  {
+   "id": "BHARI_LMG_KaalAgni",
+   "name": "Kaal Agni",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/BHARI_LMG/skins/KaalAgni/T_BHARI_LMG_KaalAgni_Albedo.png",
+    "MetallicSmoothness": "weapons/BHARI_LMG/skins/KaalAgni/T_BHARI_LMG_KaalAgni_MetallicSmoothness.png",
+    "Emission": "weapons/BHARI_LMG/skins/KaalAgni/T_BHARI_LMG_KaalAgni_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "heavy fire muzzle",
+   "kill_effect": "ember shockwave"
+  }
+ ]
+}

@@ -1,0 +1,52 @@
+{
+ "gun": "BIJLI_SMG",
+ "premium_skins": [
+  {
+   "id": "BIJLI_SMG_GulabiBijli",
+   "name": "Gulabi Bijli",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/BIJLI_SMG/skins/GulabiBijli/T_BIJLI_SMG_GulabiBijli_Albedo.png",
+    "MetallicSmoothness": "weapons/BIJLI_SMG/skins/GulabiBijli/T_BIJLI_SMG_GulabiBijli_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "pink flash",
+   "kill_effect": "pink sparks"
+  },
+  {
+   "id": "BIJLI_SMG_MehndiRaat",
+   "name": "Mehndi Raat",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/BIJLI_SMG/skins/MehndiRaat/T_BIJLI_SMG_MehndiRaat_Albedo.png",
+    "MetallicSmoothness": "weapons/BIJLI_SMG/skins/MehndiRaat/T_BIJLI_SMG_MehndiRaat_MetallicSmoothness.png",
+    "Emission": "weapons/BIJLI_SMG/skins/MehndiRaat/T_BIJLI_SMG_MehndiRaat_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "violet-gold flash",
+   "kill_effect": "violet petals"
+  },
+  {
+   "id": "BIJLI_SMG_NeelJwala",
+   "name": "Neel Jwala",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/BIJLI_SMG/skins/NeelJwala/T_BIJLI_SMG_NeelJwala_Albedo.png",
+    "MetallicSmoothness": "weapons/BIJLI_SMG/skins/NeelJwala/T_BIJLI_SMG_NeelJwala_MetallicSmoothness.png",
+    "Emission": "weapons/BIJLI_SMG/skins/NeelJwala/T_BIJLI_SMG_NeelJwala_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "blue fire muzzle",
+   "kill_effect": "blue flame ring"
+  }
+ ]
+}

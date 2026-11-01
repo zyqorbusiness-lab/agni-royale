@@ -1,0 +1,120 @@
+{
+ "gun": "AGNI_47",
+ "premium_skins": [
+  {
+   "id": "AGNI_47_NeelToofan",
+   "name": "Neel Toofan",
+   "tier": "Rare",
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/NeelToofan/T_AGNI_47_NeelToofan_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/NeelToofan/T_AGNI_47_NeelToofan_MetallicSmoothness.png"
+   },
+   "emission_intensity": 0.0,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "blue-white flash",
+   "kill_effect": "blue shard burst"
+  },
+  {
+   "id": "AGNI_47_SuvarnaMehndi",
+   "name": "Suvarna Mehndi",
+   "tier": "Epic",
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/SuvarnaMehndi/T_AGNI_47_SuvarnaMehndi_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/SuvarnaMehndi/T_AGNI_47_SuvarnaMehndi_MetallicSmoothness.png",
+    "Emission": "weapons/AGNI_47/skins/SuvarnaMehndi/T_AGNI_47_SuvarnaMehndi_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "uv_scroll": null,
+   "flow_texture": null,
+   "muzzle_flash": "gold flash + sparkle",
+   "kill_effect": "gold marigold petals"
+  },
+  {
+   "id": "AGNI_47_AgniDev",
+   "name": "Agni Dev",
+   "tier": "Legendary",
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/AgniDev/T_AGNI_47_AgniDev_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/AgniDev/T_AGNI_47_AgniDev_MetallicSmoothness.png",
+    "Emission": "weapons/AGNI_47/skins/AgniDev/T_AGNI_47_AgniDev_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "uv_scroll": [
+    0.0,
+    0.06
+   ],
+   "flow_texture": "weapons/T_FlowNoise.png",
+   "muzzle_flash": "fire-particle muzzle, orange-yellow",
+   "kill_effect": "ember burst + ash"
+  },
+  {
+   "id": "AGNI_47_MakaraRaj_Lv1",
+   "name": "Makara Raj Lv1",
+   "tier": "Mythic",
+   "evo_level": 1,
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv1_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv1_MetallicSmoothness.png",
+    "Emission": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv1_Emission.png"
+   },
+   "emission_intensity": 1.5,
+   "emission_tint": "#8a4fff",
+   "uv_scroll": [
+    0.0,
+    0.02
+   ],
+   "attachments": [],
+   "attachment_fbx": "weapons/AGNI_47/skins/MakaraRaj/AGNI_47_MakaraRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 violet / Lv2 cyan / Lv3 gold-fire dragon flash",
+   "kill_effect": "Lv3: makara roar ring + gold flames"
+  },
+  {
+   "id": "AGNI_47_MakaraRaj_Lv2",
+   "name": "Makara Raj Lv2",
+   "tier": "Mythic",
+   "evo_level": 2,
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv2_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv2_MetallicSmoothness.png",
+    "Emission": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv2_Emission.png"
+   },
+   "emission_intensity": 3.5,
+   "emission_tint": "#38d8ff",
+   "uv_scroll": [
+    0.0,
+    0.05
+   ],
+   "attachments": [
+    "Wings"
+   ],
+   "attachment_fbx": "weapons/AGNI_47/skins/MakaraRaj/AGNI_47_MakaraRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 violet / Lv2 cyan / Lv3 gold-fire dragon flash",
+   "kill_effect": "Lv3: makara roar ring + gold flames"
+  },
+  {
+   "id": "AGNI_47_MakaraRaj_Lv3",
+   "name": "Makara Raj Lv3",
+   "tier": "Mythic",
+   "evo_level": 3,
+   "textures": {
+    "Albedo": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv3_Albedo.png",
+    "MetallicSmoothness": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv3_MetallicSmoothness.png",
+    "Emission": "weapons/AGNI_47/skins/MakaraRaj/T_AGNI_47_MakaraRaj_Lv3_Emission.png"
+   },
+   "emission_intensity": 6.0,
+   "emission_tint": "#ffb21a",
+   "uv_scroll": [
+    0.02,
+    0.09
+   ],
+   "attachments": [
+    "Wings",
+    "Head"
+   ],
+   "attachment_fbx": "weapons/AGNI_47/skins/MakaraRaj/AGNI_47_MakaraRaj_Attachments.fbx",
+   "muzzle_flash": "Lv1 violet / Lv2 cyan / Lv3 gold-fire dragon flash",
+   "kill_effect": "Lv3: makara roar ring + gold flames"
+  }
+ ]
+}
