@@ -132,3 +132,28 @@ Rule for this job: source folders (`landmarks/`, `vehicles/`, `weapons/`, `emote
 - weapons/*/skins/_generated_examples (50+ auto skins; the 24 hand-made ones are in), weapons/*.blend and all .blend sources (kept outside Unity).
 - characters_face_v2 / characters_anime heads (replaced by hair v3); pets_real Sheru_Real (does not exist in the source).
 - Sky: subah/shaam/raat/monsoon panoramas are imported but only dopahar is switched on.
+
+
+## Block 7 — HERO LOOK POLISH v2 (2026-11-01 18:35-21:xxZ, worker 3b8e5d9a)
+Why: root held the hero/emote/pet proofs from Sujon because the in-game heroes looked worse than the Blender renders (smeared clothes, heavy outline, flat look, grey ground).
+- CLOTHES STREAKS — root cause found: every hero's `<Name>_clothes.png` was painted with shapes offset/shrunk from the mesh's UV islands, so each garment edge
+  sampled the colour around its island (dark background or another panel) -> red/black streaks on jackets, coats and tops. The same streaks are in the Blender
+  renders (softer there); with mipmaps (no gutter) Unity made them worse. NOT an import-setting bug (sRGB, normal type, compression were fine).
+  Fix (Tools/hero_tex/fix_hero_textures.py + blender_dump.py, applied to the Unity copies only; characters_hair_v3/ untouched): per UV island, border-touching
+  leaks that match the colour outside the island are filled from the island's own colour, thin jagged pixel lines and tiny specks inside panels are removed,
+  and every non-island pixel is padded with the nearest island colour (mip-safe, also covers LOD1/2). Importer: aniso 4, Kaiser mips, mip bias -0.3.
+- SHADER — new `AgniRoyale/HeroToon` (Resources/AgniImport/AgniHeroToon.shader) for skin/clothes/hair:
+  soft 3-tone ramp (lit / mid / core) with coloured shadows, SH ambient lift, soft lit-side rim, hair sheen band; outline HALF the old width (skin 1.6 mm,
+  clothes 2.0, hair 1.5 at 3 m) scaled by camera distance (x0.45-2.6) and tinted from the albedo instead of flat black; cloth shading normals bent toward the
+  body axis and never facing down past -0.15 (_NormalFlatten 0.85) so tight tops read as fabric, not latex, and the chest is not shaded/emphasised;
+  received shadow on cloth at 35 %. LOD1/2 get `_Far` materials that ignore vertex colour R (those LODs carry the HairMask layer, not the outline mask).
+- TEEN-SAFE: Meera's near-black bodice is now teal (46,112,120). Meera, Zoya and Rani's midriffs are painted with their top colour in the skin texture,
+  so the tops reach the skirt/shorts (no bare midriff). Flying Kiss is not used as a proof any more (thigh still clips the skirt in that clip; no fix in this pass).
+- BAREFOOT: 8 of 10 heroes (Meera, Laila, Arjun, Kabir, DJ Taal, Dr Sameer, Chotu, Bheem) had visible bare feet (the source has no shoe mesh; the boot shells
+  stop at the ankle). Their feet are painted dark boot/sock colour in the skin texture. The toe shape still shows (a modelled shoe is still to do).
+  Zoya and Rani have boot shells already; DJ Taal's white boot shells show toes too.
+- HAIR SWAY: `AgniHairJiggle` (Import/Face/AgniHairJiggle.cs) simulates the hair-v3 spring chains `jiggle_hair_<chain>_<i>` (verlet, stiffness 0.12,
+  damping 0.18, gravity, head sphere, 40-degree limit, NaN/runaway guards). Meera 17 bones, Laila 24, Zoya 22, Rani 24, men 2-4. On at HIGH/VERY HIGH only.
+  Caveat: in the software-GL proof renderer a frame intermittently stalls with sway on (never with it off); not seen on a GPU, not yet tested on a phone.
+- GROUND: the grey/white ground in proofs 17/24 is the Rann Safed salt flat, which used the soft "snow" terrain layer. Outside the Himalaya tile row that
+  splat now uses `L_salt` (Resources/AgniImport/India/T_Salt.png, tileable salt crust with polygon cracks, Tools/hero_tex/salt_texture.py).

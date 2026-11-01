@@ -30,6 +30,8 @@ namespace Agni.Import.EditorTools
         {
             if (!assetPath.Contains("/Agni/Import/Heroes/")) return;
             var ti = (TextureImporter)assetImporter; ti.maxTextureSize = 2048; ti.alphaIsTransparency = assetPath.Contains("_eye") || assetPath.Contains("_lashbrow");
+            // look polish v2: crisper cloth/skin at an angle (aniso) and sharper mips; the clothes atlas is padded (Tools/hero_tex/fix_clothes_atlas.py) so mips don't bleed
+            if (assetPath.Contains("_clothes") || assetPath.Contains("_skin.png") || assetPath.Contains("_hair")) { ti.anisoLevel = 4; ti.mipmapFilter = TextureImporterMipFilter.KaiserFilter; ti.mipMapBias = -0.3f; }
             if (assetPath.Contains("_normal")) ti.textureType = TextureImporterType.NormalMap;
             if (assetPath.Contains("_mask")) ti.sRGBTexture = false;
             var a = ti.GetPlatformTextureSettings("Android"); a.overridden = true; a.maxTextureSize = assetPath.Contains("_skin.png") || assetPath.Contains("_eye") ? 1024 : 512; a.format = TextureImporterFormat.ASTC_6x6; ti.SetPlatformTextureSettings(a);
@@ -55,7 +57,7 @@ namespace Agni.Import.EditorTools
         public static void Run()
         {
             Directory.CreateDirectory(OUT);
-            var toon = Shader.Find("AgniRoyale/AnimeToonOutline"); var unlit = Shader.Find("Universal Render Pipeline/Unlit"); var lit = Shader.Find("Universal Render Pipeline/Lit"); var brow = Shader.Find("AgniRoyale/BrowOverHair");
+            var toon = Shader.Find("AgniRoyale/HeroToon"); if (toon == null) toon = Shader.Find("AgniRoyale/AnimeToonOutline"); var unlit = Shader.Find("Universal Render Pipeline/Unlit"); var lit = Shader.Find("Universal Render Pipeline/Lit"); var brow = Shader.Find("AgniRoyale/BrowOverHair");
             Debug.Log("[AgniHeroImport] shaders toon=" + (toon != null) + " brow=" + (brow != null));
             TextAsset Track(string n) => AssetDatabase.LoadAssetAtPath<TextAsset>(FACE + n + ".json");
             var emoteTracks = Directory.GetFiles(FACE, "Face_*.json").Select(f => Path.GetFileNameWithoutExtension(f)).Where(n => !n.StartsWith("Face_React") && n != "Face_Idle_Blink" && n != "Face_Talk").Select(Track).Where(t => t != null).ToList();
@@ -66,9 +68,17 @@ namespace Agni.Import.EditorTools
                 if (fbx == null) { Debug.LogWarning("[AgniHeroImport] missing " + name); continue; }
                 Directory.CreateDirectory(dir + "Mats"); var md = dir + "Mats/";
                 bool man = System.Array.IndexOf(AgniHeroes.Names, name) >= 4;
-                var skin = Mat(md, "M_" + name + "_Skin", toon, m => { m.SetTexture("_BaseMap", T(dir + name + "_skin.png")); m.SetColor("_ShadowTint", new Color(0.96f, 0.74f, 0.66f)); m.SetFloat("_OutlineWidth", 0.0035f); });
-                var clothes = Mat(md, "M_" + name + "_Clothes", toon, m => { m.SetTexture("_BaseMap", T(dir + name + "_clothes.png")); m.SetColor("_ShadowTint", new Color(0.62f, 0.58f, 0.74f)); m.SetFloat("_OutlineWidth", 0.004f); });
-                var hair = Mat(md, "M_" + name + "_Hair", toon, m => { m.SetTexture("_BaseMap", T(dir + name + "_hair.png")); m.SetColor("_ShadowTint", new Color(0.72f, 0.7f, 0.86f)); m.SetFloat("_OutlineWidth", 0.003f); m.SetFloat("_RimStrength", 0.45f); });
+                // HeroToon v2: soft 3-tone ramp + rim, outline half the old width and scaled by camera distance, outline coloured from albedo.
+                System.Action<Material> skinF = m => { m.SetTexture("_BaseMap", T(dir + name + "_skin.png")); m.SetColor("_ShadowTint", new Color(1f, 0.84f, 0.80f)); m.SetColor("_CoreTint", new Color(0.90f, 0.66f, 0.64f)); m.SetFloat("_Softness", 0.16f); m.SetFloat("_Step", -0.05f); m.SetFloat("_CoreStep", -0.5f); m.SetFloat("_OutlineWidth", 0.0016f); m.SetFloat("_RimStrength", 0.22f); m.SetFloat("_SpecStrength", 0f); m.SetFloat("_OutlineAlbedo", 0.7f); };
+                System.Action<Material> clothF = m => { m.SetTexture("_BaseMap", T(dir + name + "_clothes.png")); m.SetColor("_ShadowTint", new Color(0.84f, 0.80f, 0.92f)); m.SetColor("_CoreTint", new Color(0.68f, 0.64f, 0.82f)); m.SetFloat("_Softness", 0.06f); m.SetFloat("_Step", -0.22f); m.SetFloat("_CoreStep", -0.7f); m.SetFloat("_NormalFlatten", 0.85f); m.SetFloat("_ShadowStrength", 0.35f); m.SetFloat("_Ambient", 0.38f); m.SetFloat("_OutlineWidth", 0.002f); m.SetFloat("_RimStrength", 0.16f); m.SetFloat("_RimWidth", 0.74f); m.SetFloat("_SpecStrength", 0f); m.SetFloat("_OutlineAlbedo", 0.55f); m.SetFloat("_Cull", 0); };
+                System.Action<Material> hairF = m => { m.SetTexture("_BaseMap", T(dir + name + "_hair.png")); m.SetColor("_ShadowTint", new Color(0.82f, 0.80f, 0.94f)); m.SetColor("_CoreTint", new Color(0.60f, 0.56f, 0.80f)); m.SetFloat("_Softness", 0.12f); m.SetFloat("_Step", 0.05f); m.SetFloat("_CoreStep", -0.4f); m.SetFloat("_OutlineWidth", 0.0015f); m.SetFloat("_RimStrength", 0.38f); m.SetFloat("_SpecStrength", 0.28f); m.SetFloat("_SpecPower", 36f); m.SetFloat("_OutlineAlbedo", 0.6f); m.SetFloat("_Cull", 0); };
+                var skin = Mat(md, "M_" + name + "_Skin", toon, m => { skinF(m); m.SetFloat("_VColWidth", 1); });
+                var clothes = Mat(md, "M_" + name + "_Clothes", toon, m => { clothF(m); m.SetFloat("_VColWidth", 1); });
+                var hair = Mat(md, "M_" + name + "_Hair", toon, m => { hairF(m); m.SetFloat("_VColWidth", 1); });
+                // LOD1/2 carry the HairMask colour layer, not OutlineMask: their outline must ignore vertex colour
+                var skinF2 = Mat(md, "M_" + name + "_Skin_Far", toon, m => { skinF(m); m.SetFloat("_VColWidth", 0); });
+                var clothF2 = Mat(md, "M_" + name + "_Clothes_Far", toon, m => { clothF(m); m.SetFloat("_VColWidth", 0); });
+                var hairF2 = Mat(md, "M_" + name + "_Hair_Far", toon, m => { hairF(m); m.SetFloat("_VColWidth", 0); });
                 var eye = Mat(md, "M_" + name + "_Eye", unlit, m => Cutout(m, T(dir + name + "_eye.png"), 0.5f, false));
                 var lash = Mat(md, "M_" + name + "_Lash", unlit, m => Cutout(m, T(dir + name + "_lashbrow.png"), 0.35f, true));
                 var browM = brow != null ? Mat(md, "M_" + name + "_Brow", brow, m => { m.SetTexture("_BaseMap", T(dir + name + "_lashbrow.png")); m.SetColor("_Color", man ? new Color(0.22f, 0.18f, 0.2f, 1) : new Color(0.29f, 0.24f, 0.39f, 1)); }) : lash;
@@ -87,7 +97,7 @@ namespace Agni.Import.EditorTools
                     var smr = r as SkinnedMeshRenderer; int n = smr != null && smr.sharedMesh != null ? smr.sharedMesh.subMeshCount : r.sharedMaterials.Length;
                     Material[] ms;
                     if (lod == 0 && n >= 7) ms = new[] { skin, clothes, eye, lash, browM, cornea, hair };
-                    else ms = new[] { skin, clothes, hair };
+                    else ms = new[] { skinF2, clothF2, hairF2 };
                     if (ms.Length != n) Debug.LogWarning("[AgniHeroImport] " + r.name + " submeshes " + n + " vs " + ms.Length);
                     r.sharedMaterials = ms.Take(n).ToArray();
                     if (smr != null) { smr.updateWhenOffscreen = false; smr.skinnedMotionVectors = false; if (lod == 0 && smr.sharedMesh != null && smr.sharedMesh.blendShapeCount > 0) face = smr; }
@@ -96,10 +106,11 @@ namespace Agni.Import.EditorTools
                 var lg = go.GetComponent<LODGroup>(); if (lg == null) lg = go.AddComponent<LODGroup>(); float[] sh = { 0.22f, 0.07f, 0.008f };
                 lg.SetLODs(Enumerable.Range(0, 3).Where(i => lods[i].Count > 0).Select(i => new LOD(sh[i], lods[i].ToArray())).ToArray()); lg.RecalculateBounds();
                 var f = go.AddComponent<AgniFace>(); f.face = face;
+                var jig = go.AddComponent<AgniHairJiggle>(); jig.lod0 = face; // spring chains from hair v3 (jiggle_hair_*) sway at runtime
                 foreach (var t in go.GetComponentsInChildren<Transform>(true)) { if (t.name == "Eye_L") f.eyeL = t; else if (t.name == "Eye_R") f.eyeR = t; else if (t.name.EndsWith(":Head")) f.head = t; }
                 f.idleTrack = Track("Face_Idle_Blink"); f.talkTrack = Track("Face_Talk"); f.emoteTracks = emoteTracks; f.reactionTracks = reactTracks; f.tier = AgniFace.Tier.High;
                 PrefabUtility.SaveAsPrefabAsset(go, OUT + name + ".prefab");
-                Debug.Log("[AgniHeroImport] " + name + ": face=" + (face != null ? face.sharedMesh.blendShapeCount + " shapes" : "NONE") + " eyes=" + (f.eyeL != null && f.eyeR != null) + " head=" + (f.head != null) + " lods " + lods[0].Count + "/" + lods[1].Count + "/" + lods[2].Count + " emoteTracks " + emoteTracks.Count + " reactions " + reactTracks.Count);
+                Debug.Log("[AgniHeroImport] " + name + ": face=" + (face != null ? face.sharedMesh.blendShapeCount + " shapes" : "NONE") + " eyes=" + (f.eyeL != null && f.eyeR != null) + " head=" + (f.head != null) + " lods " + lods[0].Count + "/" + lods[1].Count + "/" + lods[2].Count + " emoteTracks " + emoteTracks.Count + " reactions " + reactTracks.Count + " jiggleBones " + jig.BoneCount);
                 Object.DestroyImmediate(go);
             }
             AssetDatabase.SaveAssets();

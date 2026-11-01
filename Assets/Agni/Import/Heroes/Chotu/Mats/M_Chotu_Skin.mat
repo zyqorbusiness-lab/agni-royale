@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: M_Chotu_Skin
-  m_Shader: {fileID: 4800000, guid: c103e292a0561230b9bc5afa58cb6053, type: 3}
+  m_Shader: {fileID: 4800000, guid: 4fae7f8221f96c0fb90280bf341ae876, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -29,18 +29,29 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Ambient: 0.32
+    - _CoreStep: -0.5
     - _Cull: 0
     - _MidLevel: 0.55
     - _MidStep: -0.2
-    - _OutlineWidth: 0.0035
+    - _NormalFlatten: 0
+    - _OutlineAlbedo: 0.7
+    - _OutlineWidth: 0.0016
     - _RimPower: 0.62
-    - _RimStrength: 0.35
-    - _Softness: 0.02
-    - _Step: -0.06
+    - _RimStrength: 0.22
+    - _RimWidth: 0.68
+    - _Softness: 0.16
+    - _SpecPower: 24
+    - _SpecStrength: 0
+    - _Step: -0.05
+    - _VColWidth: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _CoreTint: {r: 0.9, g: 0.66, b: 0.64, a: 1}
     - _OutlineColor: {r: 0.09999997, g: 0.059999965, b: 0.089999996, a: 1}
+    - _OutlineMinMax: {r: 0.45, g: 2.6, b: 0, a: 0}
     - _RimColor: {r: 1, g: 0.86, b: 0.7, a: 1}
-    - _ShadowTint: {r: 0.96, g: 0.74, b: 0.66, a: 1}
+    - _ShadowTint: {r: 1, g: 0.84, b: 0.8, a: 1}
+    - _SpecColor: {r: 1, g: 0.96, b: 0.9, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

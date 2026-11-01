@@ -18,6 +18,7 @@ namespace Agni.Import
         public GrassKind[] grass;
         public float treeDensity = 1f;
         public static Terrain[] Tiles;
+        static TerrainLayer saltLayer;
         bool built;
 
         void OnEnable() { if (!built) Build(); }
@@ -40,7 +41,9 @@ namespace Agni.Import
                 td.SetHeights(0, 0, hts);
                 if (!headless && layers != null && layers.Length >= 6)
                 {
-                    td.terrainLayers = System.Array.ConvertAll(ti.layers, k => layers[k]); td.alphamapResolution = ares; td.baseMapResolution = 256;
+                    // the "snow" splat south of the Himalaya tile row is the Rann's white salt flat: give it a salt-crust layer (polygon cracks) instead of soft snow
+                    if (saltLayer == null) saltLayer = Resources.Load<TerrainLayer>("AgniImport/India/L_salt");
+                    int tj = ti.j; td.terrainLayers = System.Array.ConvertAll(ti.layers, k => k == 4 && tj < map.tiles - 1 && saltLayer != null ? saltLayer : layers[k]); td.alphamapResolution = ares; td.baseMapResolution = 256;
                     var sb = AgniIndia.Splat(ti.i, ti.j); int nl = ti.layers.Length; var am = new float[ares, ares, nl];
                     if (sb != null) for (int l = 0; l < nl; l++) for (int z = 0; z < ares; z++) for (int x = 0; x < ares; x++) am[z, x, l] = sb[(l * ares + z) * ares + x] / 255f;
                     else for (int z = 0; z < ares; z++) for (int x = 0; x < ares; x++) am[z, x, 0] = 1;

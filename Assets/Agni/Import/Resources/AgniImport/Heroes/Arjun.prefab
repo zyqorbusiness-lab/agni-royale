@@ -185,9 +185,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 78b8e48d98165727f8b602367ba257fc, type: 2}
-  - {fileID: 2100000, guid: 1a6014ecd144b721e8eb5752d21d166a, type: 2}
-  - {fileID: 2100000, guid: 6804ea5f3799beaa692835e92c53e5f9, type: 2}
+  - {fileID: 2100000, guid: 290e54cebb15c415c9767fd013b8ee91, type: 2}
+  - {fileID: 2100000, guid: c82ea3479286297cfa82feae2edf02f5, type: 2}
+  - {fileID: 2100000, guid: df8184a1c5e3142a6995727a96378e93, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1043,9 +1043,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 78b8e48d98165727f8b602367ba257fc, type: 2}
-  - {fileID: 2100000, guid: 1a6014ecd144b721e8eb5752d21d166a, type: 2}
-  - {fileID: 2100000, guid: 6804ea5f3799beaa692835e92c53e5f9, type: 2}
+  - {fileID: 2100000, guid: 290e54cebb15c415c9767fd013b8ee91, type: 2}
+  - {fileID: 2100000, guid: c82ea3479286297cfa82feae2edf02f5, type: 2}
+  - {fileID: 2100000, guid: df8184a1c5e3142a6995727a96378e93, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1161,6 +1161,7 @@ GameObject:
   - component: {fileID: 4266573765688933292}
   - component: {fileID: 4771407513682493138}
   - component: {fileID: 2259893941773018893}
+  - component: {fileID: 6691802876604405871}
   m_Layer: 0
   m_Name: Arjun
   m_TagString: Untagged
@@ -1278,6 +1279,26 @@ MonoBehaviour:
   voice: {fileID: 0}
   lipGain: 18
   damping: 0.06
+--- !u!114 &6691802876604405871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3535205689645092315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be5186f0161926cc5bcc6ad3dbc6f776, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgniHairJiggle
+  stiffness: 0.12
+  damping: 0.18
+  gravity: 2.2
+  maxAngle: 40
+  headRadius: 0.105
+  headCenterLocal: {x: 0, y: 0.09, z: 0.01}
+  head: {fileID: 0}
+  lod0: {fileID: 1898936665704171131}
 --- !u!1 &3588844455051276792
 GameObject:
   m_ObjectHideFlags: 0

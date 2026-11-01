@@ -25,6 +25,7 @@ namespace Agni.Net
             var lg = ch.GetComponentInChildren<LODGroup>(); var face = ch.GetComponentInChildren<AgniFace>();
             if (quality <= 0) { if (lg != null) lg.ForceLOD(2); if (face != null) face.enabled = false; }
             else if (face != null) face.tier = quality >= 2 ? AgniFace.Tier.High : AgniFace.Tier.Normal;
+            var jig = ch.GetComponentInChildren<AgniHairJiggle>(); if (jig != null) jig.enabled = quality >= 2;   // hair sway: HIGH and VERY HIGH
             foreach (var r in ch.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = r.name.EndsWith("_LOD2") ? UnityEngine.Rendering.ShadowCastingMode.Off : UnityEngine.Rendering.ShadowCastingMode.On;
         }
     }

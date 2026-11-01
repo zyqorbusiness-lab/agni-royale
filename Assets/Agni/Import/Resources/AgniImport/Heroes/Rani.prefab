@@ -648,6 +648,7 @@ GameObject:
   - component: {fileID: 3059309702957569119}
   - component: {fileID: 1949876911243607615}
   - component: {fileID: 5106780593274952332}
+  - component: {fileID: 3930882968278857798}
   m_Layer: 0
   m_Name: Rani
   m_TagString: Untagged
@@ -765,6 +766,26 @@ MonoBehaviour:
   voice: {fileID: 0}
   lipGain: 18
   damping: 0.06
+--- !u!114 &3930882968278857798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2724402436120961206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be5186f0161926cc5bcc6ad3dbc6f776, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgniHairJiggle
+  stiffness: 0.12
+  damping: 0.18
+  gravity: 2.2
+  maxAngle: 40
+  headRadius: 0.105
+  headCenterLocal: {x: 0, y: 0.09, z: 0.01}
+  head: {fileID: 0}
+  lod0: {fileID: 6965389008167271451}
 --- !u!1 &2731867575533319039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1846,9 +1867,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 68d0ecfe55647747ebcf4a9133911fcf, type: 2}
-  - {fileID: 2100000, guid: 1ad1b5e1fd91097868d14385ea23ab55, type: 2}
-  - {fileID: 2100000, guid: 36dcd2857c7a61ee8b43216829bf699f, type: 2}
+  - {fileID: 2100000, guid: fadf258484c0972a9b0c3ec5543d082b, type: 2}
+  - {fileID: 2100000, guid: 542f6d12d57b938f7a98e51947131f89, type: 2}
+  - {fileID: 2100000, guid: bf7da751add1c616a973be06c60f0e30, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2622,9 +2643,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 68d0ecfe55647747ebcf4a9133911fcf, type: 2}
-  - {fileID: 2100000, guid: 1ad1b5e1fd91097868d14385ea23ab55, type: 2}
-  - {fileID: 2100000, guid: 36dcd2857c7a61ee8b43216829bf699f, type: 2}
+  - {fileID: 2100000, guid: fadf258484c0972a9b0c3ec5543d082b, type: 2}
+  - {fileID: 2100000, guid: 542f6d12d57b938f7a98e51947131f89, type: 2}
+  - {fileID: 2100000, guid: bf7da751add1c616a973be06c60f0e30, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

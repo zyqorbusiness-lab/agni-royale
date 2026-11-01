@@ -1069,6 +1069,7 @@ GameObject:
   - component: {fileID: 1107777219248644606}
   - component: {fileID: 1768686867540304438}
   - component: {fileID: 4135225221297592750}
+  - component: {fileID: 8861313982191450892}
   m_Layer: 0
   m_Name: Kabir
   m_TagString: Untagged
@@ -1186,6 +1187,26 @@ MonoBehaviour:
   voice: {fileID: 0}
   lipGain: 18
   damping: 0.06
+--- !u!114 &8861313982191450892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3763576597747890394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be5186f0161926cc5bcc6ad3dbc6f776, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AgniHairJiggle
+  stiffness: 0.12
+  damping: 0.18
+  gravity: 2.2
+  maxAngle: 40
+  headRadius: 0.105
+  headCenterLocal: {x: 0, y: 0.09, z: 0.01}
+  head: {fileID: 0}
+  lod0: {fileID: 4286271830086676127}
 --- !u!1 &3923965417649287874
 GameObject:
   m_ObjectHideFlags: 0
@@ -1338,9 +1359,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d449e6a5a7346516d9a884f1ca14908f, type: 2}
-  - {fileID: 2100000, guid: 3e75bfb4c66bc8b0a9729ea46be34a3f, type: 2}
-  - {fileID: 2100000, guid: ec1d98eed7f31cbbd8118c40d9fe3a47, type: 2}
+  - {fileID: 2100000, guid: 37932ee28ebeb698a9cb44285b380a74, type: 2}
+  - {fileID: 2100000, guid: c044ec4fabfd813419d37593f9f56e7c, type: 2}
+  - {fileID: 2100000, guid: 0ef6ebf35d7829f11892115dc892e83c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1664,9 +1685,9 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d449e6a5a7346516d9a884f1ca14908f, type: 2}
-  - {fileID: 2100000, guid: 3e75bfb4c66bc8b0a9729ea46be34a3f, type: 2}
-  - {fileID: 2100000, guid: ec1d98eed7f31cbbd8118c40d9fe3a47, type: 2}
+  - {fileID: 2100000, guid: 37932ee28ebeb698a9cb44285b380a74, type: 2}
+  - {fileID: 2100000, guid: c044ec4fabfd813419d37593f9f56e7c, type: 2}
+  - {fileID: 2100000, guid: 0ef6ebf35d7829f11892115dc892e83c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
