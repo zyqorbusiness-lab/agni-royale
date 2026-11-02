@@ -13,7 +13,7 @@ namespace Agni.Net
 
     public static class AgniSkyCfg
     {
-        public const float PlaneAlt = 560f;      // m above sea level (the Himalaya top out near 260)
+        public const float PlaneAlt = 470f;      // m above sea level (v0.2.2: smaller map, lower plane, faster drop; the Himalaya top out near 140)
         public const float PlaneSpeed = 90f;     // m/s: about 40 s from coast to coast
         public const float LeadIn = 3f;          // s on board before the door opens
         public const float FallSpeed = 55f, DiveSpeed = 75f, FallSteer = 26f;   // v0.2.1: faster, Free Fire-like drop

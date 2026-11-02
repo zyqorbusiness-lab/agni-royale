@@ -16,7 +16,7 @@ namespace Agni.Net
 
     public static class AgniVillages
     {
-        public class Village { public string name; public Vector2 c; public float r; public BType[] kinds; public Village(string n, Vector2 c, float r, params BType[] k) { name = n; this.c = c; this.r = r; kinds = k; } }
+        public class Village { public string name; public Vector2 c; public float r; public BType[] kinds; public bool hamlet; public Village(string n, Vector2 c, float r, params BType[] k) { name = n; this.c = c; this.r = r; kinds = k; } }
         public static readonly List<LootSpot> Spots = new List<LootSpot>();
         public static readonly List<Village> Villages = new List<Village>();
         public static readonly List<(Vector2 c, float r)> Footprints = new List<(Vector2, float)>();
@@ -27,22 +27,28 @@ namespace Agni.Net
         static readonly float[] Tile = { 2.6f, 2.6f, 2.6f, 2.6f, 2.2f, 1.6f, 2.4f, 2.6f, 2.2f, 1.6f, 1.8f, 1.6f, 2.5f, 2f, 5f, 1f, 2.4f };
         static Material[] mats;
 
-        /// Village table (also read by the editor to keep trees/rocks out of them).
+        /// Village table (also read by the editor to keep trees/rocks out of them). Cached: the hamlet sites are chosen once on the RAW terrain
+        /// (before AgniIndia flattens their pads), so every later caller gets exactly the same list.
+        static List<Village> layoutCache;
         public static List<Village> Layout()
         {
+            if (layoutCache != null) return layoutCache;
+            Agni.Import.AgniIndia.Load(); if (layoutCache != null) return layoutCache; // Load() itself asks for the layout (pads) on first use
             // IMPORT v1: the loot villages stand in their India-map zones (MAP_DESIGN / map.json); the 6 Blender landmarks take the other zones
+            // v0.2.2 ("mera map to khali hai"): every zone is a proper town now (about twice the houses), with 2-3 hamlets round it
             var L = new List<Village>();
             Vector2 Z(string n) => Agni.Import.AgniIndia.ZoneW(n);
-            L.Add(new Village("Vijay Dwar Chowk", Z("Vijay Dwar Chowk"), 40, BType.DoManzila, BType.DoManzila, BType.ChhatGhar, BType.ChhatGhar, BType.ChhatGhar, BType.PakkaGhar, BType.PakkaGhar, BType.TinShed, BType.ChhatGhar));
-            L.Add(new Village("Sarson Khet", Z("Sarson Khet"), 30, BType.GolJhopdi, BType.GolJhopdi, BType.GolJhopdi, BType.KutchaGhar, BType.KutchaGhar, BType.KutchaGhar, BType.GolJhopdi, BType.KutchaGhar, BType.TinShed, BType.GolJhopdi));
-            L.Add(new Village("Gulabi Bazaar", Z("Gulabi Bazaar"), 30, BType.ChhatGhar, BType.ChhatGhar, BType.DoManzila, BType.DoManzila, BType.PakkaGhar, BType.PakkaGhar, BType.ChhatGhar));
-            L.Add(new Village("Sangmarmar Bagh", Z("Sangmarmar Bagh"), 29, BType.ChhatGhar, BType.ChhatGhar, BType.KutchaGhar, BType.KutchaGhar, BType.GolJhopdi, BType.PakkaGhar, BType.GolJhopdi));
-            L.Add(new Village("Ghat Nagari", Z("Ghat Nagari"), 29, BType.GolJhopdi, BType.GolJhopdi, BType.GolJhopdi, BType.KutchaGhar, BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.KutchaGhar));
-            L.Add(new Village("Rann Safed", Z("Rann Safed"), 29, BType.DoManzila, BType.PakkaGhar, BType.PakkaGhar, BType.PakkaGhar, BType.KutchaGhar, BType.KutchaGhar, BType.ChhatGhar, BType.TinShed));
-            L.Add(new Village("Char Minar Chowk", Z("Char Minar Chowk"), 30, BType.Godown, BType.Godown, BType.TinShed, BType.TinShed, BType.ChhatGhar, BType.TinShed, BType.DoManzila));
-            L.Add(new Village("Himgiri Ridge", Z("Himgiri Ridge"), 24, BType.KutchaGhar, BType.KutchaGhar, BType.TinShed, BType.PakkaGhar, BType.KutchaGhar));
-            L.Add(new Village("Sunehri Beach", Z("Sunehri Beach"), 26, BType.GolJhopdi, BType.GolJhopdi, BType.TinShed, BType.GolJhopdi, BType.KutchaGhar, BType.GolJhopdi));
-            L.Add(new Village("Rajmahal", Z("Rajmahal"), 32, BType.DoManzila, BType.DoManzila, BType.ChhatGhar, BType.ChhatGhar, BType.PakkaGhar, BType.ChhatGhar));
+            BType D = BType.DoManzila, C = BType.ChhatGhar, P = BType.PakkaGhar, K = BType.KutchaGhar, G = BType.GolJhopdi, T = BType.TinShed, W = BType.Godown;
+            L.Add(new Village("Vijay Dwar Chowk", Z("Vijay Dwar Chowk"), 45, D, D, C, C, C, P, P, T, C, D, C, P, C, D, P, C, T, C));
+            L.Add(new Village("Sarson Khet", Z("Sarson Khet"), 38, G, G, G, K, K, K, G, K, T, G, K, G, K, T, G, K, W));
+            L.Add(new Village("Gulabi Bazaar", Z("Gulabi Bazaar"), 37, C, C, D, D, P, P, C, C, D, P, C, T, C, D, P));
+            L.Add(new Village("Sangmarmar Bagh", Z("Sangmarmar Bagh"), 36, C, C, K, K, G, P, G, C, P, K, G, C, T, P));
+            L.Add(new Village("Ghat Nagari", Z("Ghat Nagari"), 36, G, G, G, K, K, G, T, K, C, P, K, G, C, K, P));
+            L.Add(new Village("Rann Safed", Z("Rann Safed"), 36, D, P, P, P, K, K, C, T, P, C, K, G, T, P));
+            L.Add(new Village("Char Minar Chowk", Z("Char Minar Chowk"), 38, W, W, T, T, C, T, D, C, D, P, C, T, P, C, D));
+            L.Add(new Village("Himgiri Ridge", Z("Himgiri Ridge"), 29, K, K, T, P, K, P, K, T, K, P));
+            L.Add(new Village("Sunehri Beach", Z("Sunehri Beach"), 32, G, G, T, G, K, G, C, G, K, T, P, G));
+            L.Add(new Village("Rajmahal", Z("Rajmahal"), 37, D, D, C, C, P, C, D, P, C, P, K, C, T, D));
             // small spots
             var sp = Agni.Import.AgniIndia.Map.spots;
             if (sp != null) foreach (var s in sp)
@@ -50,14 +56,67 @@ namespace Agni.Net
                     var c = new Vector2(s.x - Agni.Import.AgniIndia.Off.x, s.z - Agni.Import.AgniIndia.Off.y);
                     switch (s.kind)
                     {
-                        case "shed": L.Add(new Village(s.name, c, 16, BType.Godown, BType.TinShed)); break;
-                        case "power": L.Add(new Village(s.name, c, 16, BType.Godown, BType.TinShed, BType.TinShed)); break;
-                        case "airstrip": L.Add(new Village(s.name, c, 16, BType.TinShed, BType.TinShed, BType.ChhatGhar)); break;
-                        case "ruins": L.Add(new Village(s.name, c, 14, BType.KutchaGhar, BType.KutchaGhar)); break;
-                        default: L.Add(new Village(s.name, c, 12, BType.TinShed, BType.KutchaGhar)); break;
+                        case "shed": L.Add(new Village(s.name, c, 22, W, T, T, K, G)); break;
+                        case "power": L.Add(new Village(s.name, c, 22, W, T, T, C, T)); break;
+                        case "airstrip": L.Add(new Village(s.name, c, 22, T, T, C, W, P)); break;
+                        case "ruins": L.Add(new Village(s.name, c, 20, K, K, G, K)); break;
+                        default: L.Add(new Village(s.name, c, 18, T, K, P, G)); break;
                     }
                 }
-            return L;
+            // hamlets: 2-3 small clusters round every zone (villages AND landmarks), sited once on the raw terrain, beside a road where one passes
+            var rnd = new System.Random(9917); float Rn(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+            var zones = new List<(string name, Vector2 c, float r, string kind)>();
+            foreach (var v in L) zones.Add((v.name, v.c, v.r, StyleOf(v.name)));
+            foreach (var s in Agni.Import.AgniLandmarks.Table) zones.Add((s.display, new Vector2(s.pos.x, s.pos.z), s.flatR, s.name == "KayalVillage" ? "water" : s.name == "ChaiBagan" ? "tea" : s.name == "VindhyaShikhar" ? "hill" : s.name == "PatharGaon" ? "stone" : "city"));
+            int mainCount = L.Count;
+            foreach (var z in zones)
+            {
+                bool small = z.r < 25f; int want = small ? 1 : (z.kind == "hill" ? 2 : 3); int got = 0;
+                for (int tries = 0; tries < 160 && got < want; tries++)
+                {
+                    float hr = Rn(16f, 21f), a = Rn(0, Mathf.PI * 2), d = z.r + hr + Rn(30f, 85f);
+                    var c = z.c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
+                    if (!HamletSite(c, hr, L)) continue;
+                    // prefer sites a short walk off a road (the lanes of the hamlet open onto it)
+                    float rd = Agni.Import.AgniIndia.RoadDist(c.x, c.y); if (rd < hr + 4f) continue; if (rd > 70f && tries < 90) continue;
+                    var kinds = HamletKinds(z.kind, rnd); L.Add(new Village(z.name + " Basti " + (got + 1), c, hr, kinds) { hamlet = true }); got++;
+                }
+            }
+            Debug.Log("[AgniVillages] layout: " + mainCount + " villages/spots + " + (L.Count - mainCount) + " hamlets");
+            layoutCache = L; return L;
+        }
+        static string StyleOf(string n)
+        {
+            switch (n) { case "Vijay Dwar Chowk": case "Gulabi Bazaar": case "Char Minar Chowk": case "Rajmahal": return "city"; case "Sunehri Beach": return "beach"; case "Himgiri Ridge": return "hill"; case "Rann Safed": return "desert"; default: return "farm"; }
+        }
+        static BType[] HamletKinds(string style, System.Random r)
+        {
+            BType[] pool;
+            switch (style)
+            {
+                case "city": pool = new[] { BType.ChhatGhar, BType.PakkaGhar, BType.DoManzila, BType.ChhatGhar, BType.TinShed }; break;
+                case "beach": case "water": pool = new[] { BType.GolJhopdi, BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.PakkaGhar }; break;
+                case "hill": case "stone": pool = new[] { BType.KutchaGhar, BType.PakkaGhar, BType.KutchaGhar, BType.TinShed }; break;
+                case "desert": pool = new[] { BType.PakkaGhar, BType.KutchaGhar, BType.ChhatGhar, BType.GolJhopdi }; break;
+                case "tea": pool = new[] { BType.PakkaGhar, BType.TinShed, BType.KutchaGhar, BType.ChhatGhar }; break;
+                default: pool = new[] { BType.KutchaGhar, BType.GolJhopdi, BType.PakkaGhar, BType.KutchaGhar, BType.TinShed, BType.ChhatGhar }; break;
+            }
+            int n = 5 + r.Next(3); var k = new BType[n]; for (int i = 0; i < n; i++) k[i] = pool[r.Next(pool.Length)]; return k;
+        }
+        /// dry, gentle, clear of every other village/landmark pad and of the landmark kits
+        static bool HamletSite(Vector2 c, float r, List<Village> L)
+        {
+            float h0 = Agni.Import.AgniIndia.H(c.x, c.y); if (h0 < 2.2f || h0 > 95f) return false;
+            float mn = h0, mx = h0;
+            for (int ring = 1; ring <= 2; ring++) for (int i = 0; i < 12; i++)
+                {
+                    float a = i * 0.5236f, rr = (r + 10f) * ring / 2f; float h = Agni.Import.AgniIndia.H(c.x + Mathf.Cos(a) * rr, c.y + Mathf.Sin(a) * rr);
+                    if (h < 1.4f) return false; mn = Mathf.Min(mn, h); mx = Mathf.Max(mx, h);
+                }
+            if (mx - mn > 7f) return false;
+            foreach (var v in L) if ((v.c - c).magnitude < v.r + r + (v.hamlet ? 34f : 44f)) return false;
+            foreach (var s in Agni.Import.AgniLandmarks.Table) if ((new Vector2(s.pos.x, s.pos.z) - c).magnitude < s.flatR + s.blend * 0.6f + r + 10f) return false;
+            return true;
         }
 
         public static Transform Build(Transform parent)
@@ -75,23 +134,24 @@ namespace Agni.Net
                 Villages.Add(v);
                 var vt = new GameObject("Village_" + v.name.Replace(' ', '_')).transform; vt.SetParent(Root, false);
                 vt.localPosition = new Vector3(0, Agni.Import.AgniIndia.VillageY(v.c), 0); // the zone's flattened pad on the India terrain
-                DirtPatch(vt, new Vector3(v.c.x, 0, v.c.y), v.r * 0.8f, rnd);
+                DirtPatch(vt, new Vector3(v.c.x, 0, v.c.y), v.r * (v.hamlet ? 0.5f : 0.55f), rnd); // v0.2.2: a chowk, not the whole village
                 int placed = 0;
                 for (int i = 0; i < v.kinds.Length; i++)
                 {
                     var kind = v.kinds[i]; float fr = FootR(kind);
-                    for (int tries = 0; tries < 60; tries++)
+                    for (int tries = 0; tries < 90; tries++)
                     {
                         float ang = R(0, Mathf.PI * 2), rad = Mathf.Sqrt(R(i == 0 ? 0f : 0.05f, 1f)) * (v.r - fr * 0.5f);
                         var p = v.c + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * rad;
-                        if (!Free(p, fr + 2.2f)) continue;
+                        if (!Free(p, fr + 2.0f)) continue;
+                        if (Agni.Import.AgniIsland.RoadDist(p.x, p.y) < fr + 1.5f) continue; // v0.2.2: the road runs through the chowk as a clear lane
                         // face the village centre (door towards the chowk) with a little jitter, snapped like a real lane
                         var toC = v.c - p; float yaw = toC.sqrMagnitude < 1 ? R(0, 360) : Mathf.Atan2(toC.x, toC.y) * Mathf.Rad2Deg + 180f;
                         yaw = Mathf.Round(yaw / 15f) * 15f + R(-4, 4);
                         Building(kind, vt, new Vector3(p.x, 0, p.y), yaw, rnd); Footprints.Add((p, fr)); placed++; break;
                     }
                 }
-                Sign(vt, v, rnd);
+                if (!v.hamlet) Sign(vt, v, rnd);
             }
             // lonely farm huts / sheds between the villages
             var lone = new[] { BType.KutchaGhar, BType.GolJhopdi, BType.TinShed, BType.ChhatGhar, BType.KutchaGhar, BType.PakkaGhar, BType.GolJhopdi, BType.TinShed, BType.KutchaGhar, BType.ChhatGhar, BType.GolJhopdi, BType.PakkaGhar,
@@ -100,12 +160,36 @@ namespace Agni.Net
             for (int pass = 0; pass < 3; pass++) foreach (var kind in lone) // the India map is ~4 km: 3 x 22 farm huts / sheds across the land
                 for (int tries = 0; tries < 400; tries++)
                 {
-                    var p = new Vector2(R(-1550, 1750), R(-1700, 1600)); float fr = FootR(kind); if (!Agni.Import.AgniIndia.OnLand(p.x, p.y, 2f)) continue;
+                    var p = new Vector2(R(-1085, 1225), R(-1190, 1120)); /* v0.2.2: the 70% map */ float fr = FootR(kind); if (!Agni.Import.AgniIndia.OnLand(p.x, p.y, 2f)) continue;
                     if (Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.y, fr + 3f) || !Agni.Import.AgniIsland.IsFlat(p.x, p.y, fr + 2f) || Agni.Import.AgniIsland.RoadDist(p.x, p.y) < fr + 3f) continue;
                     bool inV = false; foreach (var v in Villages) if ((p - v.c).magnitude < v.r + fr + 12) inV = true;
                     if (inV || !Free(p, fr + 18)) continue;
                     Building(kind, ft, new Vector3(p.x, GroundUnder(p, fr), p.y), R(0, 360), rnd); Footprints.Add((p, fr)); break;
                 }
+            // v0.2.2: roadside life — a dhaba / shop / house pair every ~150 m along every road, facing the road (no empty stretches)
+            var rt = new GameObject("Roadside").transform; rt.SetParent(Root, false); int roadside = 0;
+            BType[] rs = { BType.TinShed, BType.ChhatGhar, BType.PakkaGhar, BType.KutchaGhar, BType.TinShed, BType.ChhatGhar, BType.GolJhopdi };
+            foreach (var road in Agni.Import.AgniIndia.Map.roads)
+            {
+                var pts = road.pts; if (pts == null || pts.Length < 4) continue; float acc = R(30, 80);
+                for (int k = 2; k + 1 < pts.Length; k += 2)
+                {
+                    var a = new Vector2(pts[k - 2], pts[k - 1]) - Agni.Import.AgniIndia.Off; var b = new Vector2(pts[k], pts[k + 1]) - Agni.Import.AgniIndia.Off;
+                    float segL = (b - a).magnitude; acc -= segL; if (acc > 0 || segL < 0.01f) continue; acc = R(70, 120);
+                    var dir = (b - a) / segL; var nrm = new Vector2(-dir.y, dir.x); int n = 2 + rnd.Next(3); float side = rnd.NextDouble() < 0.5 ? -1 : 1;
+                    for (int q = 0; q < n; q++)
+                    {
+                        var kind = rs[rnd.Next(rs.Length)]; float fr = FootR(kind);
+                        var p = b + dir * (q * (fr * 2.3f + 3f) * (q % 2 == 0 ? 1 : -1)) + nrm * side * (road.width * 0.5f + fr + R(3.5f, 7f));
+                        if (!Agni.Import.AgniIndia.OnLand(p.x, p.y, 2f) || Agni.Import.AgniIsland.IsWaterOrBank(p.x, p.y, fr + 3f) || !Agni.Import.AgniIsland.IsFlat(p.x, p.y, fr + 1.5f, 0.9f)) continue;
+                        if (Agni.Import.AgniIsland.RoadDist(p.x, p.y) < fr + 2.5f || Agni.Import.AgniIsland.InKit(p.x, p.y, fr + 4f) || !Free(p, fr + 3f)) continue;
+                        bool inV = false; foreach (var v in Villages) if ((p - v.c).magnitude < v.r + fr + 6) inV = true; if (inV) continue;
+                        float yaw = Mathf.Atan2(-nrm.x * side, -nrm.y * side) * Mathf.Rad2Deg + 180f; // door towards the road
+                        Building(kind, rt, new Vector3(p.x, GroundUnder(p, fr), p.y), yaw, rnd); Footprints.Add((p, fr)); roadside++;
+                    }
+                }
+            }
+            Debug.Log("[AgniVillages] roadside houses " + roadside);
             // IMPORT v1: a few houses at the edge of each landmark, so it stands in a lived-in place (not on a bare lawn)
             var lt = new GameObject("LandmarkEdge").transform; lt.SetParent(Root, false);
             BType[] edge = { BType.KutchaGhar, BType.PakkaGhar, BType.ChhatGhar, BType.TinShed, BType.GolJhopdi };
@@ -113,7 +197,7 @@ namespace Agni.Net
             {
                 if (s.name == "VindhyaShikhar" || s.name == "KayalVillage") continue;
                 var c = new Vector2(s.pos.x, s.pos.z); int got = 0;
-                for (int tries = 0; tries < 300 && got < 8; tries++)
+                for (int tries = 0; tries < 400 && got < 12; tries++)
                 {
                     var kind = edge[rnd.Next(edge.Length)]; float fr = FootR(kind);
                     float a = R(0, Mathf.PI * 2), r = s.footR * R(0.45f, 1.0f) + fr + R(2, 22); var p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
@@ -609,7 +693,9 @@ namespace Agni.Net
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) return;
             var b = new MB(); int n = 36; var pts = new Vector3[n];
-            for (int i = 0; i < n; i++) { float a = i / (float)n * Mathf.PI * 2; float rr = r * (0.82f + 0.25f * (float)rnd.NextDouble()); pts[i] = new Vector3(Mathf.Cos(a) * rr, 0.03f, Mathf.Sin(a) * rr); }
+            // v0.2.2: an irregular, lobed chowk (smooth random radius) instead of a near-perfect disc
+            float p1 = (float)rnd.NextDouble() * 6.28f, p2 = (float)rnd.NextDouble() * 6.28f, p3 = (float)rnd.NextDouble() * 6.28f;
+            for (int i = 0; i < n; i++) { float a = i / (float)n * Mathf.PI * 2; float rr = r * (0.78f + 0.16f * Mathf.Sin(2 * a + p1) + 0.11f * Mathf.Sin(3 * a + p2) + 0.07f * Mathf.Sin(5 * a + p3)); pts[i] = new Vector3(Mathf.Cos(a) * rr, 0.03f, Mathf.Sin(a) * rr); }
             for (int i = 0; i < n; i++) b.Tri(new Vector3(0, 0.03f, 0), pts[(i + 1) % n], pts[i], Vector3.up, Vector3.right, Vector3.forward, VMat.Dirt, 1, false);
             var go = new GameObject("DirtPatch"); go.transform.SetParent(parent, false); go.transform.localPosition = c;
             go.AddComponent<MeshFilter>().sharedMesh = b.ToMesh(0, out var used, "Dirt"); var mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterials = used; mr.shadowCastingMode = ShadowCastingMode.Off;

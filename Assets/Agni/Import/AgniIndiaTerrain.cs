@@ -43,7 +43,7 @@ namespace Agni.Import
                 {
                     // the "snow" splat south of the Himalaya tile row is the Rann's white salt flat: give it a salt-crust layer (polygon cracks) instead of soft snow
                     if (saltLayer == null) saltLayer = Resources.Load<TerrainLayer>("AgniImport/India/L_salt");
-                    int tj = ti.j; td.terrainLayers = System.Array.ConvertAll(ti.layers, k => k == 4 && tj < map.tiles - 1 && saltLayer != null ? saltLayer : layers[k]); td.alphamapResolution = ares; td.baseMapResolution = 256;
+                    int tj = ti.j; td.terrainLayers = System.Array.ConvertAll(ti.layers, k => k == 6 ? (saltLayer != null ? saltLayer : layers[4]) : layers[k]); td.alphamapResolution = ares; td.baseMapResolution = 256;
                     var sb = AgniIndia.Splat(ti.i, ti.j); int nl = ti.layers.Length; var am = new float[ares, ares, nl];
                     if (sb != null) for (int l = 0; l < nl; l++) for (int z = 0; z < ares; z++) for (int x = 0; x < ares; x++) am[z, x, l] = sb[(l * ares + z) * ares + x] / 255f;
                     else for (int z = 0; z < ares; z++) for (int x = 0; x < ares; x++) am[z, x, 0] = 1;
@@ -54,7 +54,7 @@ namespace Agni.Import
                 var go = Terrain.CreateTerrainGameObject(td); go.hideFlags = HideFlags.DontSave; go.name = "Terrain_" + ti.i + "_" + ti.j;
                 go.transform.SetParent(transform, false); go.transform.position = new Vector3(ti.i * map.tileSize - off.x, map.@base, ti.j * map.tileSize - off.y);
                 var t2 = go.GetComponent<Terrain>(); if (terrainMat != null) t2.materialTemplate = terrainMat;
-                t2.heightmapPixelError = q <= 0 ? 10 : q == 1 ? 7 : 5; t2.basemapDistance = 400; t2.drawInstanced = true; t2.groupingID = 7; t2.allowAutoConnect = true;
+                t2.heightmapPixelError = q <= 0 ? 10 : q == 1 ? 7 : 5; t2.basemapDistance = 5000; t2.drawInstanced = false; // v0.2.2: TerrainToon (non-instanced, no basemap) t2.groupingID = 7; t2.allowAutoConnect = true;
                 t2.treeDistance = q <= 0 ? 380 : q == 1 ? 600 : 900; t2.treeBillboardDistance = 2000; t2.treeMaximumFullLODCount = 60;
                 t2.detailObjectDistance = q <= 0 ? 0 : q == 1 ? 45 : q == 2 ? 65 : 85; t2.detailObjectDensity = q <= 0 ? 0 : q == 1 ? 0.35f : q == 2 ? 0.6f : 0.85f; // LOW none, NORMAL / HIGH / VERY HIGH
                 t2.shadowCastingMode = ShadowCastingMode.Off;
@@ -152,7 +152,7 @@ namespace Agni.Import
         public static string Biome(float x, float z, float h)
         {
             float lat = AgniIndia.Lat(z), lon = AgniIndia.Lon(x);
-            if (h > 70f || lat > 32.2f) return "mountain";
+            if (h > 56f || lat > 32.2f) return "mountain"; // v0.2.2: heights over 8 m were scaled x0.78 with the map
             if (lon < 73.6f && lat > 23.0f && lat < 30.2f) return "desert";
             if (lon > 89.5f) return "northeast";
             if (lat < 16.5f || (h < 6f && lat < 22.5f)) return "coast";
@@ -169,7 +169,7 @@ namespace Agni.Import
             var keepOut = new List<(Vector2 c, float r)>();
             foreach (var s in AgniLandmarks.Table) keepOut.Add((new Vector2(s.pos.x, s.pos.z), s.footR + 2f));
             foreach (var v in Agni.Net.AgniVillages.Layout()) keepOut.Add((v.c, v.r + 4f));
-            int total = 0, target = Mathf.RoundToInt(16000 * treeDensity);
+            int total = 0, target = Mathf.RoundToInt(14000 * treeDensity); // v0.2.2: half the land area, so ~1.75x denser than v0.2.1
             void Add(float x, float z, int proto, float sc)
             {
                 int ti = Mathf.FloorToInt((x + off.x) / map.tileSize), tj = Mathf.FloorToInt((z + off.y) / map.tileSize); if (ti < 0 || tj < 0 || ti >= map.tiles || tj >= map.tiles) return; var tt = terr[ti, tj]; if (tt == null) return;
@@ -225,6 +225,17 @@ namespace Agni.Import
             {
                 if (t == null) continue; var td = t.terrainData; td.SetDetailScatterMode(DetailScatterMode.InstanceCountMode); td.SetDetailResolution(dres, 32); td.detailPrototypes = protos.ToArray(); // counts per 2 m cell, not coverage
                 var o = t.transform.position; var layersD = new int[grass.Length][,]; for (int i = 0; i < grass.Length; i++) layersD[i] = new int[dres, dres];
+                // v0.2.2: villages/hamlets are lived-in ground: worn earth on the chowk, short lawn between the houses, no tall cover inside
+                var vill = new float[dres, dres]; float cell = map.tileSize / dres;
+                foreach (var v in Agni.Net.AgniVillages.Layout())
+                {
+                    float R0 = v.r + 14f; int x0 = Mathf.FloorToInt((v.c.x - R0 - o.x) / cell), x1 = Mathf.CeilToInt((v.c.x + R0 - o.x) / cell), z0 = Mathf.FloorToInt((v.c.y - R0 - o.z) / cell), z1 = Mathf.CeilToInt((v.c.y + R0 - o.z) / cell);
+                    for (int z = Mathf.Max(0, z0); z <= Mathf.Min(dres - 1, z1); z++) for (int x = Mathf.Max(0, x0); x <= Mathf.Min(dres - 1, x1); x++)
+                        {
+                            float d = Vector2.Distance(new Vector2(o.x + (x + 0.5f) * cell, o.z + (z + 0.5f) * cell), v.c);
+                            float t01 = d < v.r * 0.5f ? 2f : 1f - Mathf.Clamp01((d - v.r) / 14f); vill[z, x] = Mathf.Max(vill[z, x], t01);
+                        }
+                }
                 for (int z = 0; z < dres; z++) for (int x = 0; x < dres; x++)
                     {
                         float wx = o.x + (x + 0.5f) / dres * map.tileSize, wz = o.z + (z + 0.5f) / dres * map.tileSize; float h = AgniIndia.H(wx, wz); if (h < AgniIndia.SeaY + 0.45f) continue;
@@ -233,13 +244,14 @@ namespace Agni.Import
                         float trample = kd > 12f ? 1f : Mathf.Lerp(0.35f, 1f, Mathf.Clamp01(kd / 12f)); // worn ground right at a landmark's edge
                         bool nearWater = false; if (h < 4f) for (int k = 0; k < 8 && !nearWater; k++) { float a = k * 0.785f; nearWater = AgniIndia.H(wx + Mathf.Cos(a) * 9f, wz + Mathf.Sin(a) * 9f) < AgniIndia.SeaY + 0.15f; }
                         float town = kd < 40f ? 1f - Mathf.Clamp01((kd - 10f) / 30f) : 0f; // 1 right around a landmark: short lawn/meadow, no tall cover
+                        float vt = vill[z, x]; if (vt > 1.5f) { trample *= 0.18f; vt = 1f; } town = Mathf.Max(town, vt);
                         string bio = Biome(wx, wz, h); float gl = AgniIndia.Layer(wx, wz, "grass"), dl = AgniIndia.Layer(wx, wz, "dry"), sl = AgniIndia.Layer(wx, wz, "sand"), snl = AgniIndia.Layer(wx, wz, "snow"), ml = AgniIndia.Layer(wx, wz, "mustard");
                         for (int i = 0; i < grass.Length; i++)
                         {
                             var g = grass[i]; float w = 0;
                             switch (g.biome)
                             {
-                                case "meadow": w = gl * (bio == "desert" ? 0.1f : 1f); break;
+                                case "meadow": w = gl * (bio == "desert" ? 0.1f : 1f) * (1f - 0.6f * town); break;
                                 case "lawn": w = gl * (0.5f + town * 1.2f); break;
                                 case "dry": w = dl + (bio == "desert" ? 0.4f : 0f); break;
                                 case "alpine": w = bio == "mountain" ? Mathf.Max(gl, 0.4f) * (1f - snl) : 0f; break;

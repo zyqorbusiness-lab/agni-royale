@@ -39,6 +39,7 @@ Shader "AgniRoyale/Landmark"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "AgniToon.hlsl"
             TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap); TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);
             struct A { float4 pos : POSITION; float3 n : NORMAL; float4 t : TANGENT; float2 uv : TEXCOORD0; half4 col : COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct V { float4 cs : SV_POSITION; float2 uv : TEXCOORD0; float3 ws : TEXCOORD1; half3 n : TEXCOORD2; half4 t : TEXCOORD3; half4 col : TEXCOORD4; float3 os : TEXCOORD5; float fog : TEXCOORD6; float4 sh : TEXCOORD7; };
@@ -67,12 +68,36 @@ Shader "AgniRoyale/Landmark"
                 half3 nt = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, i.uv), _BumpScale);
                 half3 nrm = normalize(i.n); half3 tan = normalize(i.t.xyz); half3 bit = cross(nrm, tan) * i.t.w;
                 half3 nws = normalize(TransformTangentToWorld(nt, half3x3(tan, bit, nrm)));
-                InputData d = (InputData)0; d.positionWS = i.ws; d.normalWS = nws; d.viewDirectionWS = GetWorldSpaceNormalizeViewDir(i.ws);
-                d.shadowCoord = TransformWorldToShadowCoord(i.ws); d.fogCoord = i.fog; d.bakedGI = i.sh.rgb; d.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.cs); d.shadowMask = half4(1,1,1,1);
-                SurfaceData s = (SurfaceData)0; s.albedo = alb; s.metallic = _Metallic; s.smoothness = _Smoothness * (1 - g * 0.6); s.occlusion = 1; s.alpha = 1; s.normalTS = nt;
-                half4 c = UniversalFragmentPBR(d, s);
+                // v0.2.2 anime world: the same soft toon ramp as houses/terrain (normal map kept at half strength for a little form)
+                nws = normalize(lerp(nrm, nws, 0.5));
+                half3 soft = SAMPLE_TEXTURE2D_BIAS(_BaseMap, sampler_BaseMap, i.uv, 1.2).rgb * _Tint.rgb;
+                alb = lerp(alb, alb * soft / max(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv).rgb * _Tint.rgb, 0.02), 0.5);
+                alb = AgniGrade(alb, 1.16) * 1.05;
+                half4 c = half4(AgniToonShade(alb, nws, i.ws, i.sh.rgb, 0.8), 1);
                 c.rgb = MixFog(c.rgb, i.fog); c.a = 1; return c;
             }
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "Outline" Tags { "LightMode"="SRPDefaultUnlit" }
+            Cull Front ZWrite On
+            HLSLPROGRAM
+            #pragma vertex vo
+            #pragma fragment fo
+            #pragma multi_compile_fog
+            #pragma multi_compile_instancing
+            TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
+            struct A { float4 pos : POSITION; float3 n : NORMAL; float2 uv : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct V { float4 cs : SV_POSITION; float2 uv : TEXCOORD0; half fog : TEXCOORD1; };
+            V vo(A a)
+            {   // v0.2.2: light anime outline (switched off on LOW/NORMAL by AgniAnime)
+                V o; UNITY_SETUP_INSTANCE_ID(a);
+                float3 ws = TransformObjectToWorld(a.pos.xyz); float3 n = normalize(TransformObjectToWorldNormal(a.n));
+                float k = clamp(distance(ws, GetCameraPositionWS()) / 10.0, 0.35, 4.0);
+                o.cs = TransformWorldToHClip(ws + n * 0.028 * k); o.uv = TRANSFORM_TEX(a.uv, _BaseMap); o.fog = ComputeFogFactor(o.cs.z); return o;
+            }
+            half4 fo(V i) : SV_Target { half3 a = SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, i.uv, 4).rgb * _Tint.rgb; return half4(MixFog(lerp(half3(0.16,0.12,0.16), a * 0.38, 0.5), i.fog), 1); }
             ENDHLSL
         }
         Pass

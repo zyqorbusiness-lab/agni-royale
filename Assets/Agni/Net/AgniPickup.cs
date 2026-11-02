@@ -59,9 +59,11 @@ namespace Agni.Net
         {
             var r = new System.Random(System.Environment.TickCount); Spawned = 0;
             if (AgniVillages.Spots.Count == 0) AgniVillages.Build(null);
+            // v0.2.2: ~2.5x the houses, so each spot rolls a little less often (total loot up ~40%, not 2.5x: phones host the offline match)
+            float dens = Mathf.Clamp(1250f / Mathf.Max(1, AgniVillages.Spots.Count), 0.45f, 1f);
             foreach (var s in AgniVillages.Spots)
             {
-                if (r.NextDouble() > (s.tier == 2 ? 0.85 : 0.72)) continue;
+                if (r.NextDouble() > (s.tier == 2 ? 0.85 : 0.72) * (s.tier == 2 ? Mathf.Sqrt(dens) : dens)) continue;
                 var id = AgniItems.Roll(s.tier, r); var j = new Vector3((float)r.NextDouble() * 0.5f - 0.25f, 0, (float)r.NextDouble() * 0.5f - 0.25f);
                 AgniPickup.ServerDrop(id, AgniItems.FreshAmount(id, r), s.pos + j); Spawned++;
                 if (AgniItems.IsGun(id))
@@ -74,7 +76,7 @@ namespace Agni.Net
             // v0.2.1: loot in the open around every village too (lanes and the chowk), so landing next to houses always finds guns + goli
             foreach (var v in AgniVillages.Villages)
             {
-                int n = 10;
+                int n = v.hamlet ? 4 : 10;
                 for (int i = 0; i < n; i++)
                 {
                     float a = (float)(r.NextDouble() * Mathf.PI * 2), d = v.r * (0.25f + 0.9f * (float)r.NextDouble());

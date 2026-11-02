@@ -45,6 +45,7 @@ namespace Agni.Net
             else if (mode == "ugs") yield return UgsTest();
             else if (mode == "loot") yield return Loot();
             else if (mode == "india") yield return India();
+            else if (mode == "anime") yield return AnimeMap();
             else if (mode == "drive") yield return Drive();
             else if (mode == "gunskin") yield return GunSkin();
             else if (mode == "emote") yield return EmoteMatch();

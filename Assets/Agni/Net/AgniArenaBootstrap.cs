@@ -9,7 +9,7 @@ namespace Agni.Net
 {
     public class AgniArenaBootstrap : MonoBehaviour
     {
-        public float arenaRadius = 1750f;
+        public float arenaRadius = 1225f;
         float t0; bool spawned;
 
         void Awake()
@@ -17,6 +17,7 @@ namespace Agni.Net
             AgniMatch.ArenaRadius = arenaRadius; t0 = Time.realtimeSinceStartup;
             AgniVillages.Root = null; AgniVillages.Build(null); // houses + loot spots (same on server and clients)
             Agni.Import.AgniLandmarks.Root = null; Agni.Import.AgniLandmarks.Build(null); // IMPORT v1: Blender landmarks + their loot spots
+            if (!AgniNetConfig.HeadlessServer) Agni.Import.AgniAnime.ApplyLook(); // v0.2.2: anime sky / ambient / fog / sun + per-tier outline
             Application.targetFrameRate = AgniNetConfig.HeadlessServer ? 30 : Application.targetFrameRate;
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) StripForHeadless();
             if (AgniNet.NM != null && AgniNet.NM.SceneManager != null) AgniNet.NM.SceneManager.OnLoadEventCompleted += Loaded;

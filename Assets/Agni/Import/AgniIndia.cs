@@ -24,6 +24,8 @@ namespace Agni.Import
             public TileInfo[] tilesInfo; public Zone[] zones; public MSpot[] spots; public Road[] roads; public Bridge[] bridges; public Road[] rivers;
         }
         public static readonly Vector2 Off = new Vector2(1600f, 2000f);
+        /// v0.2.2: the TerrainSource data was resampled to 70% about Off (Sujon: "map chota kar", Free Fire size): every old hard-coded world position x MapScale
+        public const float MapScale = 0.7f;
         public const float SeaY = 0f;
         public static MapData Map { get { Load(); return map; } }
         static MapData map; static float[] gh; static int gn; static bool loaded;
@@ -76,18 +78,18 @@ namespace Agni.Import
         {
             // landmark + village pads come from their own tables (positions/heights fixed by the zones)
             foreach (var s in AgniLandmarks.Table) Pads.Add(new Pad { c = new Vector2(s.pos.x, s.pos.z), flat = s.flatR, blend = s.blend, h = s.padY });
-            foreach (var v in Agni.Net.AgniVillages.Layout()) Pads.Add(new Pad { c = v.c, flat = v.r + 12f, blend = 38f, h = VillageY(v.c) });
+            foreach (var v in Agni.Net.AgniVillages.Layout()) Pads.Add(new Pad { c = v.c, flat = v.r + (v.hamlet ? 7f : 12f), blend = v.hamlet ? 24f : 38f, h = VillageY(v.c) });
             foreach (var p in Pads) FlattenCircle(p);
             // Ghanta Ghar: a 40 m river (the Hooghly) under the kit's steel bridge
             var gg = AgniLandmarks.Table.Find(t => t.name == "GhantaGharSquare");
             if (gg != null)
             {
                 var rot = Quaternion.Euler(0, gg.yaw, 0); var mid = gg.pos + rot * new Vector3(-52f, 0, 0); var along = rot * Vector3.forward;
-                CarveSegment(new Vector2(mid.x, mid.z) - new Vector2(along.x, along.z) * 260f, new Vector2(mid.x, mid.z) + new Vector2(along.x, along.z) * 260f, 19.5f, 7f, -3.0f);
+                CarveSegment(new Vector2(mid.x, mid.z) - new Vector2(along.x, along.z) * 190f, new Vector2(mid.x, mid.z) + new Vector2(along.x, along.z) * 190f, 19.5f, 7f, -3.0f);
             }
             // Siliguri corridor ("chicken's neck"): at 1 px = 2 m the real ~22 km neck is a thread the sea cuts; widen it to a ~70 m land bridge so the
             // north-east (Chai Bagan) is reachable on foot and by road, as on the real map
-            RaiseSegment(new Vector2(987f, 522f), new Vector2(1265f, 584f), 34f, 20f, 3.2f);
+            RaiseSegment(new Vector2(987f, 522f) * MapScale, new Vector2(1265f, 584f) * MapScale, 30f, 18f, 3.2f); // v0.2.2: map shrunk to 70% (world = old world x MapScale)
             // Kayal: the backwater channel the stilt village stands in (kit water level = sea level, bed 0.85 m down)
             var ky = AgniLandmarks.Table.Find(t => t.name == "KayalVillage");
             if (ky != null)

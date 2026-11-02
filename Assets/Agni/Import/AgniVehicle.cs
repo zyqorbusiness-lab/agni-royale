@@ -295,7 +295,7 @@ namespace Agni.Net
             int n = 0;
             // two per village (one on each side), one per landmark, the monster truck in the mill yard
             foreach (var v in AgniVillages.Villages)
-                for (int k = 0; k < 2; k++)
+                for (int k = 0; k < (v.hamlet ? (rng.NextDouble() < 0.55 ? 1 : 0) : 2); k++) // v0.2.2: + one car/bike in about half the hamlets
                 {
                     float a = R(0, Mathf.PI * 2); var c = new Vector3(v.c.x, 0, v.c.y); float rr = v.r + R(6, 14);
                     if (TrySpawn(pool[rng.Next(pool.Length)], c + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * rr, R(0, 360), rng)) n++;

@@ -93,18 +93,23 @@ namespace Agni.UI
                 // (skipped in the editor so play-testing never rewrites the project's pipeline assets)
                 // v0.2.1 phone tuning: render below native resolution on LOW/NORMAL (the biggest single win on phones),
                 // no shadows on LOW, short shadows on NORMAL, MSAA only on the top tiers.
+                // v0.2.2 (Sujon: "normal graphics ke liye sab ka quality bahut low, high graphics high quality"): a WIDE gap between tiers.
+                // LOW / NORMAL: very light (low render scale, no realtime shadows, no MSAA/HDR, no post). HIGH / VERY HIGH: full res, real soft shadows, MSAA.
                 switch (Gfx)
                 {
-                    case GfxPreset.Smooth: urp.renderScale = 0.7f; urp.msaaSampleCount = 1; urp.shadowDistance = 0f; urp.supportsHDR = false; break;
-                    case GfxPreset.Standard: urp.renderScale = 0.8f; urp.msaaSampleCount = 1; urp.shadowDistance = 25f; urp.supportsHDR = false; break;
-                    case GfxPreset.Ultra: urp.renderScale = 1.0f; urp.msaaSampleCount = 2; urp.shadowDistance = 50f; break;
-                    case GfxPreset.VeryHigh: urp.renderScale = 1.0f; urp.msaaSampleCount = 4; urp.shadowDistance = 80f; break;
+                    case GfxPreset.Smooth: urp.renderScale = 0.65f; urp.msaaSampleCount = 1; urp.shadowDistance = 0f; urp.supportsHDR = false; break;
+                    case GfxPreset.Standard: urp.renderScale = 0.75f; urp.msaaSampleCount = 1; urp.shadowDistance = 0f; urp.supportsHDR = false; break;
+                    case GfxPreset.Ultra: urp.renderScale = 1.0f; urp.msaaSampleCount = 2; urp.shadowDistance = 70f; urp.supportsHDR = false; break;
+                    case GfxPreset.VeryHigh: urp.renderScale = 1.0f; urp.msaaSampleCount = 4; urp.shadowDistance = 120f; urp.supportsHDR = true; break;
                 }
             }
-            // textures: LOW loads half-resolution textures (less memory, less heat)
-            QualitySettings.globalTextureMipmapLimit = Gfx == GfxPreset.Smooth ? 1 : 0;
-            QualitySettings.shadows = Gfx == GfxPreset.Smooth ? UnityEngine.ShadowQuality.Disable : UnityEngine.ShadowQuality.HardOnly;
-            if (Gfx >= GfxPreset.Ultra) QualitySettings.shadows = UnityEngine.ShadowQuality.All;
+            // textures: LOW = 1/4 resolution, NORMAL = 1/2, HIGH / VERY HIGH = full
+            QualitySettings.globalTextureMipmapLimit = Gfx == GfxPreset.Smooth ? 2 : Gfx == GfxPreset.Standard ? 1 : 0;
+            // models: LOW / NORMAL switch to the simpler LODs much earlier; VERY HIGH keeps full detail far out
+            QualitySettings.lodBias = Gfx == GfxPreset.Smooth ? 0.45f : Gfx == GfxPreset.Standard ? 0.7f : Gfx == GfxPreset.Ultra ? 1.4f : 2.2f;
+            QualitySettings.shadows = Gfx <= GfxPreset.Standard ? UnityEngine.ShadowQuality.Disable : UnityEngine.ShadowQuality.All;
+            QualitySettings.softParticles = Gfx >= GfxPreset.Ultra;
+            QualitySettings.anisotropicFiltering = Gfx >= GfxPreset.Ultra ? AnisotropicFiltering.Enable : AnisotropicFiltering.Disable;
             ApplyWorld();
             // Sound: SFX sources read AgniSettings.Sfx, music sources read AgniSettings.Music (see AgniLobby.music).
         }
@@ -118,16 +123,17 @@ namespace Agni.UI
             float view, detailD, detailDens, basemap, treeD; 
             switch (Gfx)
             {
-                case GfxPreset.Smooth: view = 800f; detailD = 30f; detailDens = 0.3f; basemap = 60f; treeD = 350f; break;
-                case GfxPreset.Standard: view = 1100f; detailD = 45f; detailDens = 0.5f; basemap = 120f; treeD = 500f; break;
-                case GfxPreset.Ultra: view = 1300f; detailD = 70f; detailDens = 0.8f; basemap = 250f; treeD = 800f; break;
-                default: view = 1600f; detailD = 100f; detailDens = 1f; basemap = 400f; treeD = 1200f; break;
+                // v0.2.2: LOW / NORMAL short grass + view range, HIGH / VERY HIGH long view and full grass (the map is 70% of v0.2.1)
+                case GfxPreset.Smooth: view = 750f; detailD = 16f; detailDens = 0.2f; basemap = 60f; treeD = 300f; break;
+                case GfxPreset.Standard: view = 950f; detailD = 26f; detailDens = 0.35f; basemap = 120f; treeD = 450f; break;
+                case GfxPreset.Ultra: view = 1300f; detailD = 80f; detailDens = 0.85f; basemap = 250f; treeD = 1000f; break;
+                default: view = 2000f; detailD = 120f; detailDens = 1f; basemap = 400f; treeD = 1600f; break;
             }
             foreach (var t in Terrain.activeTerrains)
             {
                 if (t == null) continue;
-                t.detailObjectDistance = detailD; t.detailObjectDensity = detailDens; t.basemapDistance = basemap; t.treeDistance = treeD;
-                t.heightmapPixelError = Gfx == GfxPreset.Smooth ? 12f : Gfx == GfxPreset.Standard ? 8f : 5f;
+                t.detailObjectDistance = detailD; t.detailObjectDensity = detailDens; t.basemapDistance = 5000f; t.treeDistance = treeD; // v0.2.2: TerrainToon has no basemap shader, always the full (cheap) toon shader
+                t.heightmapPixelError = Gfx == GfxPreset.Smooth ? 14f : Gfx == GfxPreset.Standard ? 10f : Gfx == GfxPreset.Ultra ? 5f : 3f;
             }
             foreach (var cam in Camera.allCameras)
             {
@@ -136,8 +142,12 @@ namespace Agni.UI
                 d[0] = view;                         // Default layer: props/houses/loot (the terrain's own layer is left alone below)
                 foreach (var t in Terrain.activeTerrains) if (t != null) d[t.gameObject.layer] = 0;
                 cam.layerCullDistances = d; cam.layerCullSpherical = true;
+                if (cam.farClipPlane >= 300f) cam.farClipPlane = Mathf.Max(view, 750f) + 100f; // v0.2.2: the plane flies at 470 m, the far plane follows the tier
                 cam.useOcclusionCulling = true;
+                // no post-processing on LOW / NORMAL
+                var cd = cam.GetComponent<UniversalAdditionalCameraData>(); if (cd != null) { cd.renderPostProcessing = Gfx >= GfxPreset.Ultra && cd.renderPostProcessing; if (Gfx <= GfxPreset.Standard) cd.renderShadows = false; else cd.renderShadows = true; }
             }
+            try { Agni.Import.AgniAnime.ApplyTier((int)Gfx); } catch { }
         }
     }
 }
