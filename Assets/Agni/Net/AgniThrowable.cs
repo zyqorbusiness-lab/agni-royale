@@ -54,7 +54,7 @@ namespace Agni.Net
         void Update()
         {
             if (!IsServer || done || !IsSpawned) return;
-            if (NetworkManager.ServerTime.Time >= FuseEnd.Value) Detonate(transform.position, Vector3.up);
+            if (AgniNet.Now >= FuseEnd.Value) Detonate(transform.position, Vector3.up);
         }
         void OnCollisionEnter(Collision c)
         {

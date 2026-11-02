@@ -172,7 +172,7 @@ namespace Agni.Net
             healIcon.sprite = show != ItemId.None ? Icon(show) : null; healIcon.enabled = healIcon.sprite != null;
             healCount.text = show != ItemId.None ? v.Heals(show).ToString() : ""; healTxt.text = show != ItemId.None ? AgniItems.Name(show) + (healPick == ItemId.None ? "" : " •") : "";
             healIcon.transform.parent.gameObject.SetActive(P.Alive && (v.patti + v.dawa + v.josh > 0 || P.Healing.Value));
-            if (P.Healing.Value && AgniNet.NM != null) { float left = (float)(P.HealEnd.Value - AgniNet.NM.ServerTime.Time); healRing.fillAmount = 1 - Mathf.Clamp01(left / Mathf.Max(0.1f, P.HealLen.Value)); healTimer.text = Mathf.Max(0, left).ToString("0.0"); healIcon.color = new Color(1, 1, 1, 0.35f); }
+            if (P.Healing.Value && AgniNet.NM != null) { float left = (float)(P.HealEnd.Value - AgniNet.Now); healRing.fillAmount = 1 - Mathf.Clamp01(left / Mathf.Max(0.1f, P.HealLen.Value)); healTimer.text = Mathf.Max(0, left).ToString("0.0"); healIcon.color = new Color(1, 1, 1, 0.35f); }
             else { healRing.fillAmount = P.Boost.Value > 0 ? P.Boost.Value / 100f : 0; healTimer.text = ""; healIcon.color = Color.white; }
             // scope button + overlay
             float z = lp.Zoom; scopeBtn.SetActive(P.Alive && P.HasGunInHand);

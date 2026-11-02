@@ -261,7 +261,7 @@ namespace Agni.Net
             var v = Inv.Value; if (!Alive || Healing.Value || v.Heals(h) == 0) return;
             if (h == ItemId.Patti && Hp.Value >= 150) return; if (h == ItemId.DawaKit && Hp.Value >= MaxHp) return;
             float len = h == ItemId.Patti ? 3f : h == ItemId.DawaKit ? 5.5f : 2f;
-            HealItem.Value = (byte)h; HealLen.Value = len; HealEnd.Value = NetworkManager.ServerTime.Time + len; Healing.Value = true; healT = len;
+            HealItem.Value = (byte)h; HealLen.Value = len; HealEnd.Value = AgniNet.Now + len; Healing.Value = true; healT = len;
         }
         void FinishHeal()
         {

@@ -105,13 +105,14 @@ namespace Agni.Net
             if (Mathf.Abs(Mathf.DeltaAngle(Pitch.Value, inp.pitch)) > 1f) Pitch.Value = inp.pitch;
             bool fireHeld = inp.Has(AgniInput.Fire);
             bool riding = ServerRide(dt); if (riding && Seat.Value == 0) fireHeld = false; // the driver drives, passengers may shoot
+            bool flying = !riding && ServerSky(dt, inp); if (flying) { fireHeld = false; inp.buttons = 0; } // plane / freefall / parachute (AgniSky.cs)
 
             // --- move
             float speed = Knocked ? CrawlSpeed : Crouched.Value ? CrouchSpeed : (inp.Has(AgniInput.Sprint) && inp.move.y > 0.5f && !fireHeld) ? SprintSpeed : RunSpeed;
             if (Healing.Value) speed *= 0.45f; if (inp.Has(AgniInput.Aim) && !Knocked) speed *= 0.6f; if (reviveTarget != null) speed = 0;
             var mv = Vector2.ClampMagnitude(inp.move, 1f);
             var wish = Quaternion.Euler(0, inp.yaw, 0) * new Vector3(mv.x, 0, mv.y) * speed;
-            if (!riding)
+            if (!riding && !flying)
             {
                 if (cc.isGrounded && vy < 0) vy = -2f; vy -= Gravity * dt;
                 cc.Move((wish + Vector3.up * vy) * dt);
@@ -148,11 +149,11 @@ namespace Agni.Net
             // --- revive a knocked teammate (hold interact)
             ReviveLogic(inp, dt);
             // --- loot
-            pickT -= dt; if (pickT <= 0 && !riding) { pickT = 0.25f; ServerAutoPick(); }
+            pickT -= dt; if (pickT <= 0 && !riding && !flying) { pickT = 0.25f; ServerAutoPick(); }
             lastButtons = inp.buttons;
         }
 
-        public void ServerJump() { if (!Alive || Crouched.Value || !cc.isGrounded) return; vy = JumpV; JumpFxRpc(); }
+        public void ServerJump() { if (InPlane) { ServerLeavePlane(); return; } if (!Alive || InAir || Crouched.Value || !cc.isGrounded) return; vy = JumpV; JumpFxRpc(); }
         public void ServerCrouch() { if (!Alive) return; Crouched.Value = !Crouched.Value; cc.height = Crouched.Value ? 1.2f : 1.8f; cc.center = Vector3.up * cc.height * 0.5f; }
         public void ServerReload()
         {
@@ -224,7 +225,7 @@ namespace Agni.Net
         void ThrowLogic(AgniInput inp, bool held)
         {
             var k = (ThrowKind)Sel.Value; if (Count(k) == 0) { CancelCook(); var f = FirstOwned(); if (f == ThrowKind.None) { Slot.Value = 0; return; } Sel.Value = (byte)f; return; }
-            var d = ThrowMath.Def(k); double now = NetworkManager.ServerTime.Time;
+            var d = ThrowMath.Def(k); double now = AgniNet.Now;
             if (held && !cooking && fireCd <= 0 && !Healing.Value) { cooking = true; cookT = now; CookStart.Value = d.cookable ? now : -1; CookFxRpc((byte)k); }
             if (!cooking) return;
             if (d.cookable && now - cookT >= d.fuse) { DoThrow(inp, k, 0f, true); return; } // cooked too long: goes off in hand
@@ -239,7 +240,7 @@ namespace Agni.Net
             var prefab = Resources.Load<GameObject>("AgniNet/AgniThrowable");
             var go = Instantiate(prefab, origin, Quaternion.identity); var t = go.GetComponent<AgniThrowable>();
             t.Kind.Value = (byte)k; t.thrower = this; t.throwYaw = inp.yaw;
-            t.FuseEnd.Value = NetworkManager.ServerTime.Time + Mathf.Max(0.02f, d.fuse - cooked);
+            t.FuseEnd.Value = AgniNet.Now + Mathf.Max(0.02f, d.fuse - cooked);
             go.GetComponent<NetworkObject>().Spawn(true); t.ServerLaunch(vel);
             ThrowFxRpc((byte)k);
             if (Count(k) == 0) { var f = FirstOwned(); if (f != ThrowKind.None) Sel.Value = (byte)f; else Slot.Value = 0; }

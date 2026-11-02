@@ -10,7 +10,7 @@ namespace Agni.Net
 {
     public enum MatchPhase : byte { Warmup = 0, Playing = 1, Ended = 2 }
 
-    public class AgniMatch : NetworkBehaviour
+    public partial class AgniMatch : NetworkBehaviour
     {
         public static AgniMatch Instance;
         public NetworkVariable<byte> Phase = new NetworkVariable<byte>();
@@ -32,9 +32,10 @@ namespace Agni.Net
         public override void OnNetworkSpawn()
         {
             Instance = this;
+            if (NetworkManager.IsClient) AgniSkyFx.Ensure();
             if (!IsServer) return;
             bool dedicated = !NetworkManager.IsHost;
-            StartAt.Value = NetworkManager.ServerTime.Time + AgniNetConfig.Countdown(dedicated);
+            StartAt.Value = AgniNet.Now + AgniNetConfig.Countdown(dedicated);
             Phase.Value = (byte)MatchPhase.Warmup;
             foreach (var kv in AgniNet.Clients) SpawnHuman(kv.Key);
             NetworkManager.OnClientConnectedCallback += OnConnected;
@@ -77,7 +78,7 @@ namespace Agni.Net
         void Update()
         {
             if (!IsServer || !IsSpawned) return;
-            double now = NetworkManager.ServerTime.Time;
+            double now = AgniNet.Now;
             if (Phase.Value == (byte)MatchPhase.Warmup)
             {
                 bool dedicated = !NetworkManager.IsHost;
@@ -119,11 +120,13 @@ namespace Agni.Net
             // classic: every squad lands next to a house it can loot (each building used once while there are enough)
             var fps = new List<(Vector2 c, float r)>(AgniVillages.Footprints); for (int i = fps.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); var t = fps[i]; fps[i] = fps[j]; fps[j] = t; }
             if (AgniNetConfig.Has("-agniDropVillage")) { string vn = AgniNetConfig.Arg("-agniDropVillage"); foreach (var v in AgniVillages.Villages) if (v.name.Replace(" ", "").ToLower().StartsWith(vn.ToLower())) { int k0 = fps.FindIndex(f => (f.c - v.c).magnitude < v.r); if (k0 > 0) { var t = fps[0]; fps[0] = fps[k0]; fps[k0] = t; } } }
+            bool usePlane = !AgniNetConfig.Has("-agniNoPlane"); var spots = new List<Vector3>();
             for (int ti = 0; ti < teams.Count; ti++)
             {
                 float a = (ti + (float)rnd.NextDouble() * 0.6f) / teams.Count * Mathf.PI * 2f; float r = ArenaRadius * (0.35f + 0.5f * (float)rnd.NextDouble());
                 var c = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
                 if (fps.Count > 0) { var f = fps[ti % fps.Count]; var dir = (Vector2.zero - f.c).sqrMagnitude > 1 ? (Vector2.zero - f.c).normalized : Vector2.up; var q = f.c + dir * (f.r + 2.5f); c = new Vector3(q.x, 0, q.y); }
+                spots.Add(c); if (usePlane) continue;
                 for (int k = 0; k < teams[ti].Count; k++)
                 {
                     var off = new Vector3(Mathf.Cos(k * 1.57f), 0, Mathf.Sin(k * 1.57f)) * 2.2f;
@@ -133,7 +136,8 @@ namespace Agni.Net
                     if (AgniNetConfig.Has("-agniKit")) { foreach (var kk in ThrowMath.All) p.ServerAddThrowable(kk, 1); }
                 }
             }
-            AgniLoot.ServerSpawnAll(NetworkManager.ServerTime.Time);
+            if (usePlane) { ServerPlanStart(teams, spots, rnd); if (AgniNetConfig.Has("-agniKit")) foreach (var t in teams) foreach (var p in t) foreach (var kk in ThrowMath.All) p.ServerAddThrowable(kk, 1); }
+            AgniLoot.ServerSpawnAll(AgniNet.Now);
             AgniVehicles.ServerSpawnAll(); // the 7 Blender vehicles near villages/landmarks, boats on the water
             Phase.Value = (byte)MatchPhase.Playing; Recount();
             AgniZone.Instance?.ServerBegin();
@@ -164,7 +168,7 @@ namespace Agni.Net
             if (Phase.Value == (byte)MatchPhase.Playing && TeamsAlive.Value <= 1)
             {
                 int win = -1; foreach (var q in AgniPlayer.All) if (!q.Dead) { win = q.Team.Value; q.Placement.Value = 1; }
-                WinnerTeam.Value = win; Phase.Value = (byte)MatchPhase.Ended; endAt = NetworkManager.ServerTime.Time + 12;
+                WinnerTeam.Value = win; Phase.Value = (byte)MatchPhase.Ended; endAt = AgniNet.Now + 12;
                 EndedRpc(win); Debug.Log("[AgniMatch] winner squad " + win);
             }
         }

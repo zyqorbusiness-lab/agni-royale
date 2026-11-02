@@ -58,6 +58,10 @@ namespace Agni.Net
     {
         public static AgniNet Instance { get; private set; }
         public static NetworkManager NM => Instance != null ? Instance.nm : null;
+        /// match clock for every timed rule (countdown, plane, zone, fuses, heals, emotes). Normally the NGO server time;
+        /// a frame-by-frame recording on an offline host (AgniShot run) sets GameClock so it follows Time.time (captureFramerate).
+        public static bool GameClock;
+        public static double Now => GameClock ? Time.timeAsDouble : (NM != null ? NM.ServerTime.Time : 0);
         public static NetRole Role { get; private set; }
         public static bool Running => NM != null && NM.IsListening;
         public static bool IsServer => NM != null && NM.IsServer;

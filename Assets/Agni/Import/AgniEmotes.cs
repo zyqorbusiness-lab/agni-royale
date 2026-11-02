@@ -37,7 +37,7 @@ namespace Agni.Net
         {
             if (!IsServer) return;
             if (e == 0 || e > AgniEmotes.Names.Length || !Alive || InVehicle || Healing.Value) { Emote.Value = 0; return; }
-            Emote.Value = e; EmoteAt.Value = NetworkManager.ServerTime.Time;
+            Emote.Value = e; EmoteAt.Value = AgniNet.Now;
         }
         /// runs every server tick (from ServerRide): moving, firing, jumping into a vehicle or a knock ends the emote; one-shot emotes end with their clip
         void ServerEmoteTick()
@@ -45,7 +45,7 @@ namespace Agni.Net
             if (Emote.Value == 0) return;
             bool cancel = !Alive || InVehicle || input.move.sqrMagnitude > 0.04f || input.Has(AgniInput.Fire) || Healing.Value;
             int i = Emote.Value - 1; var c = AgniEmotes.Clip(i);
-            if (!cancel && c != null && !AgniEmotes.Loops(AgniEmotes.Names[i]) && NetworkManager.ServerTime.Time - EmoteAt.Value > c.length + 0.3) cancel = true;
+            if (!cancel && c != null && !AgniEmotes.Loops(AgniEmotes.Names[i]) && AgniNet.Now - EmoteAt.Value > c.length + 0.3) cancel = true;
             if (cancel) Emote.Value = 0;
         }
     }
