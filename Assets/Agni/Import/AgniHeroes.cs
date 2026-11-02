@@ -7,8 +7,9 @@ namespace Agni.Net
 {
     public static class AgniHeroes
     {
-        public static readonly string[] Names = { "Meera", "Laila", "Zoya", "Rani", "Arjun", "Kabir", "DJ_Taal", "Dr_Sameer", "Chotu", "Bheem" };
-        public static readonly string[] Display = { "Meera", "Laila", "Zoya", "Rani", "Arjun", "Kabir", "DJ Taal", "Dr Sameer", "Chotu", "Bheem" };
+        // 0-9: our hair-v3 heroes (Mixamo rig). 10+: CGTrader royalty-free heroes v1 (own rigs, posed through AgniRetarget; credits in CREDITS.md)
+        public static readonly string[] Names = { "Meera", "Laila", "Zoya", "Rani", "Arjun", "Kabir", "DJ_Taal", "Dr_Sameer", "Chotu", "Bheem", "Ishita", "Tara", "Rhea", "Naina", "Veer", "Aryan" };
+        public static readonly string[] Display = { "Meera", "Laila", "Zoya", "Rani", "Arjun", "Kabir", "DJ Taal", "Dr Sameer", "Chotu", "Bheem", "Ishita", "Tara", "Rhea", "Naina", "Veer", "Aryan" };
         /// one uniform scale for all heroes (Meera v3 is 1.89 m tall in the FBX, the fighter capsule is built for ~1.72 m): men stay taller than women
         public const float MatchScale = 0.91f;
         static readonly GameObject[] cache = new GameObject[Names.Length]; static readonly bool[] tried = new bool[Names.Length];

@@ -35,11 +35,14 @@ namespace Agni.Net
         }
         public void RebuildModel()
         {
-            if (model != null) Destroy(model.gameObject); model = null; anim = null; hasClips = false; legsFound = false; shownGun = 255; face = null; playingEmote = -1; emoteState = null;
+            if (model != null) Destroy(model.gameObject); model = null; anim = null; rt = null; rHandVis = null; hasClips = false; legsFound = false; shownGun = 255; face = null; playingEmote = -1; emoteState = null;
             hips = spine1 = spine2 = rArm = rFore = rHand = lArm = head = null;
             BuildModel(); if (p.Dead && model != null) model.gameObject.SetActive(false);
         }
         AgniFace face; int playingEmote = -1; string emoteState;
+        // CGTrader heroes: clips + procedural bones run on Proxy_Rig, AgniRetarget copies the pose to the hero's own rig afterwards
+        AgniRetarget rt; Transform rHandVis;
+        void SeatGun() { if (gun != null && gun.activeSelf && rHandVis != null) gun.transform.position = rHandVis.position; }
         void BuildModel()
         {
             var heroPrefab = AgniHeroes.Prefab(p.Hero.Value);
@@ -51,6 +54,7 @@ namespace Agni.Net
                 if (heroPrefab != null) AgniHeroes.SetupInMatch(ch, Agni.UI.AgniMahal.Quality, p == AgniPlayer.Local); else Agni.UI.AgniCharacterLook.Setup(ch, q);
                 var an = ch.GetComponent<Animator>(); if (an != null) Destroy(an);
                 if (heroPrefab != null) { ch.transform.localScale = Vector3.one * AgniHeroes.MatchScale; face = ch.GetComponentInChildren<AgniFace>(); }
+                rt = ch.GetComponent<AgniRetarget>(); if (rt != null) { rHandVis = rt.Bone(HumanBodyBones.RightHand); rt.afterApply = SeatGun; }
                 else { float h = Height(ch); if (h > 0.01f) ch.transform.localScale = Vector3.one * (1.72f / h); }
                 hips = F(model, "Hips"); spine1 = F(model, "Spine1"); spine2 = F(model, "Spine2"); rArm = F(model, "RightArm"); rFore = F(model, "RightForeArm"); rHand = F(model, "RightHand"); lArm = F(model, "LeftArm"); head = F(model, "Head");
                 Transform rig = null; foreach (Transform c in ch.transform) if (c.name.EndsWith("_Rig")) rig = c; // clips are recorded relative to <Hero>_Rig (same mixamorig bone names on all 10 heroes)
@@ -144,7 +148,7 @@ namespace Agni.Net
             if (holdingThrow && rHand != null && (held == null || heldKind != (ThrowKind)p.Sel.Value) && Time.time - throwT > 0.45f)
             {
                 if (held != null) Destroy(held); heldKind = (ThrowKind)p.Sel.Value;
-                held = AgniFx.BuildThrowableView(heldKind, rHand); held.transform.localPosition = Vector3.zero; held.transform.localScale = Vector3.one / Mathf.Max(0.0001f, rHand.lossyScale.x);
+                var hh = rHandVis != null ? rHandVis : rHand; held = AgniFx.BuildThrowableView(heldKind, hh); held.transform.localPosition = Vector3.zero; held.transform.localScale = Vector3.one / Mathf.Max(0.0001f, hh.lossyScale.x);
             }
             if (held != null) held.SetActive(holdingThrow && (Time.time - throwT > 0.45f || Time.time - throwT < 0.27f));
             if (!holdingThrow && held != null) { Destroy(held); held = null; }

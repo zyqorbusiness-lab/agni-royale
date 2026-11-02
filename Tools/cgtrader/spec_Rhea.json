@@ -1,0 +1,47 @@
+{
+ "src": "/home/user/tab/files/zyqor_game/cgtrader/F5_unity-humanoid-model-anime007/A007.fbx",
+ "texdirs": [
+  "/dev/shm/cgt/F5"
+ ],
+ "height": 1.868131868131868,
+ "hips": "spine05",
+ "neck": "neck01",
+ "hands": [
+  "wrist_L",
+  "wrist_R"
+ ],
+ "delete": [
+  ".*teeth.*",
+  ".*tongue.*"
+ ],
+ "part_tris": {
+  "a007_01-mind_eyelashes_05": 900,
+  "a007_01-mind_eyelashes_05_2": 400,
+  "a007_01-pleated_skirtelv1": 7000,
+  "sandal": 3000
+ },
+ "add_root": [
+  "hips",
+  [
+   "spine05",
+   "pelvis_L",
+   "pelvis_R"
+  ]
+ ],
+ "name": "Rhea",
+ "out": "/dev/shm/cgt/out/Rhea",
+ "head": "head",
+ "cover": [
+  {
+   "mat": "young_caucasian",
+   "x": 0.078,
+   "z0": 0.735,
+   "z1": 0.796,
+   "color": [
+    0.5841,
+    0.0003,
+    0.0009
+   ]
+  }
+ ]
+}

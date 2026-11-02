@@ -1,0 +1,49 @@
+CGTrader — Royalty Free License (as published at https://help.cgtrader.com/hc/en-us/articles/360015124437-Royalty-Free-License , read 2026-11-02)
+General Terms: https://www.cgtrader.com/pages/terms-and-conditions
+"(no AI)" on a listing = the model may not be used to train or feed AI/ML models (CGTrader's 'Royalty Free License, No AI').
+
+If the model is under Royalty Free license, you can use it as long as it is incorporated into the product and as long as the 3rd party cannot retrieve it on its own in both digital and physical form. You cannot resell the model you bought in its digital form and you cannot resell it in its printed form as a separate, single item. 
+
+Product may not be sold, given, or assigned to another person or entity in the form it is downloaded from the Site.
+
+The Buyer’s license to Product in this paragraph is strictly limited to Incorporated Product. Any use or republication, including sale or distribution of Product that is not Incorporated Product is strictly prohibited. For illustration, approved distribution or use of Product as Incorporated Product includes, but is not limited to:
+
+as rendered still images or moving images; resold as part of a feature film, broadcast, or stock photography;
+as purchased by a game’s creators as part of a game if the Product is contained inside a proprietary format and displays inside the game during play, but not for users to re-package as goods distributed or sold inside a virtual world;
+as Product published within a book, poster, t-shirt or other item;
+as part of a physical object such as a toy, doll, or model.
+
+If you use any Product in software products (such as video games, simulations, or VR-worlds) you must take all reasonable measures to prevent the end user from gaining access to the Product. Methods of safeguarding the Product include but are not limited to:
+
+using a proprietary disc format such as Xbox 360, Playstation 3, etc.;
+using a proprietary Product format;
+using a proprietary and/or password protected database or resource file that stores the Product data;
+encrypting the Product data.
+
+Without prejudice the information above, the Seller grants to the Buyer who purchases license rights to Product and uses it solely as Incorporated Product a non-exclusive, worldwide, license in any medium now known or hereinafter invented to:
+
+reproduce, post, promote, license, sell, publicly perform, publicly display, digitally perform, or transmit for promotional and commercial purposes
+use any trademarks, service marks or trade names incorporated in the Product in connection with Seller material;
+use the name and likeness of any individuals represented in the Product only in connection with Your material.
+
+The resale or redistribution by the Buyer of any Product, obtained from the Site is expressly prohibited unless it is an Incorporated Product as licensed above.
+
+We also always suggest buyers discuss the usage with the seller and gain their approval, this would make you a hundred percent sure that you can proceed with your decision of using the purchase.
+
+ 
+
+Articles in this section
+Royalty Free License
+Editorial License
+What is the difference between Royalty Free and Editorial licenses?
+What is a Custom License?
+Do I get exclusive rights to use the 3D model after purchase?
+How can I get exclusive rights to a product?
+Can I commercially use a free model?
+Was this article helpful?
+Yes No
+4 out of 4 found this helpful
+CONTACT US
+support@cgtrader.com
+FOLLOW US
+© CGTrader Help Center. Theme by Lotus Themes

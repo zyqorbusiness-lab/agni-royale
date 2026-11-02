@@ -1,0 +1,16 @@
+{
+ "src": "/home/user/tab/files/zyqor_game/cgtrader/F6_female-civilian/girl.blend",
+ "texdirs": [
+  "/dev/shm/cgt/F6"
+ ],
+ "height": 1.89010989010989,
+ "hips": "pelvis",
+ "neck": "neck_01",
+ "hands": [
+  "hand_l",
+  "hand_r"
+ ],
+ "name": "Naina",
+ "out": "/dev/shm/cgt/out/Naina",
+ "head": "head"
+}

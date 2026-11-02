@@ -1,0 +1,46 @@
+{
+ "src": "/home/user/tab/files/zyqor_game/cgtrader/F4_unity-humanoid-model-anime010/A010.fbx",
+ "texdirs": [
+  "/dev/shm/cgt/F4"
+ ],
+ "height": 1.846153846153846,
+ "hips": "spine05",
+ "neck": "neck01",
+ "hands": [
+  "wrist_L",
+  "wrist_R"
+ ],
+ "delete": [
+  ".*teeth.*",
+  ".*tongue.*"
+ ],
+ "part_tris": {
+  "a010_01-mind_eyelashes_05": 900,
+  "a010_01-mind_eyelashes_05_2": 900,
+  "a010_01-mind_eyelashes_under": 300
+ },
+ "add_root": [
+  "hips",
+  [
+   "spine05",
+   "pelvis_L",
+   "pelvis_R"
+  ]
+ ],
+ "name": "Tara",
+ "out": "/dev/shm/cgt/out/Tara",
+ "head": "head",
+ "cover": [
+  {
+   "mat": "young_caucasian",
+   "x": 0.062,
+   "z0": 0.735,
+   "z1": 0.806,
+   "color": [
+    0.8388,
+    0.8388,
+    0.807
+   ]
+  }
+ ]
+}

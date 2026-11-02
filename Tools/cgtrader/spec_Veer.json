@@ -1,0 +1,49 @@
+{
+ "src": "/dev/shm/cgt/M1/ANIME SOLDIER BOY/ANIMATION FILE/GUN ANIMATION/GUN ANIMATION.blend",
+ "texdirs": [
+  "/dev/shm/cgt/M1/ANIME SOLDIER BOY"
+ ],
+ "height": 2.021978021978022,
+ "hips": "Hips",
+ "neck": "Neck",
+ "hands": [
+  "Left wrist",
+  "Right wrist"
+ ],
+ "delete": [
+  "Circle.*",
+  "Text.*",
+  "Torus.*",
+  "thug life",
+  "BezierCircle.*",
+  "Plane.*",
+  "10131_BaseballCap.*",
+  "Body\\.004"
+ ],
+ "delete_materials": [
+  "cornea",
+  "teeth",
+  "tongue"
+ ],
+ "part_tris": {
+  "Body.001": 3000,
+  "Body.092": 6000
+ },
+ "name": "Veer",
+ "out": "/dev/shm/cgt/out/Veer",
+ "head": "Head",
+ "part_protect": false,
+ "tints": {
+  "Bullet_light_Diffuse": [
+   0.62,
+   0.42,
+   0.16
+  ]
+ },
+ "kill_faces": [
+  {
+   "mat": "Ga_Skin_Leg|Ga_Nails|Ga_Skin_Body",
+   "zmax": 0.075
+  }
+ ]
+}

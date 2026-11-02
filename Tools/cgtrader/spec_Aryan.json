@@ -1,0 +1,31 @@
+{
+ "src": "/home/user/tab/files/zyqor_game/cgtrader/M4_unity-humanoid-model-male-014/M014.fbx",
+ "texdirs": [
+  "/dev/shm/cgt/M4"
+ ],
+ "height": 2.010989010989011,
+ "hips": "spine05",
+ "neck": "neck01",
+ "hands": [
+  "wrist_L",
+  "wrist_R"
+ ],
+ "delete": [
+  ".*teeth.*",
+  ".*tongue.*"
+ ],
+ "part_tris": {
+  "m014_03-mind_eyelashes_05": 1200
+ },
+ "add_root": [
+  "hips",
+  [
+   "spine05",
+   "pelvis_L",
+   "pelvis_R"
+  ]
+ ],
+ "name": "Aryan",
+ "out": "/dev/shm/cgt/out/Aryan",
+ "head": "head"
+}

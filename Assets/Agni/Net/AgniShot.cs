@@ -51,6 +51,7 @@ namespace Agni.Net
             else if (mode == "emote") yield return EmoteMatch();
             else if (mode == "netloot") yield return NetLoot();
             else if (mode == "run") yield return Run();
+            else if (mode == "cgtrun") yield return CgtRun();
             else if (mode == "uitest") yield return UiTest();
             else yield return Grenade();
             Log("done"); Quit(0);

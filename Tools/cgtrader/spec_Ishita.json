@@ -1,0 +1,20 @@
+{
+ "src": "/home/user/tab/files/zyqor_game/cgtrader/F3_anime-girl/AnimeCharRig.blend",
+ "texdirs": [
+  "/dev/shm/cgt/F3"
+ ],
+ "height": 1.813186813186813,
+ "hips": "mixamorig:Hips",
+ "neck": "mixamorig:Neck",
+ "hands": [
+  "mixamorig:LeftHand",
+  "mixamorig:RightHand"
+ ],
+ "bone_prefix_swap": [
+  "mixamorig:",
+  "mx_"
+ ],
+ "name": "Ishita",
+ "out": "/dev/shm/cgt/out/Ishita",
+ "head": "mixamorig:Head"
+}

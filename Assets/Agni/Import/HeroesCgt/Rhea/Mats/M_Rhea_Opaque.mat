@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_Rhea_Opaque
+  m_Shader: {fileID: 4800000, guid: 4fae7f8221f96c0fb90280bf341ae876, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: 83dece7d940ebacaf8b976ec209281ef, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Ambient: 0.36
+    - _CoreStep: -0.6
+    - _Cull: 0
+    - _NormalFlatten: 0.45
+    - _OutlineAlbedo: 0.62
+    - _OutlineWidth: 0.0017
+    - _RimStrength: 0.2
+    - _RimWidth: 0.72
+    - _ShadowStrength: 0.45
+    - _Softness: 0.1
+    - _SpecPower: 24
+    - _SpecStrength: 0
+    - _Step: -0.12
+    - _VColWidth: 0
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _CoreTint: {r: 0.74, g: 0.64, b: 0.76, a: 1}
+    - _OutlineColor: {r: 0.079999976, g: 0.049999982, b: 0.079999976, a: 1}
+    - _OutlineMinMax: {r: 0.45, g: 2.6, b: 0, a: 0}
+    - _RimColor: {r: 1, g: 0.93, b: 0.85, a: 1}
+    - _ShadowTint: {r: 0.9, g: 0.82, b: 0.86, a: 1}
+    - _SpecColor: {r: 1, g: 0.96, b: 0.9, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
