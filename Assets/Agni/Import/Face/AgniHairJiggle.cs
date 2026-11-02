@@ -1,7 +1,7 @@
 // Agni Royale — cheap hair sway for the hair-v3 heroes (spring chains "jiggle_hair_<chain>_<i>" from characters_hair_v3).
 // Verlet particles per bone tail, pulled back to the animated pose (stiffness), gravity + damping, fixed bone lengths,
 // a head sphere so locks don't go through the skull, and an angle limit so a lock never flips. ~20 bones per hero, no allocations per frame.
-// Runs only while the hero is visible and on LOD0; off on LOW graphics (AgniMahal.Quality 0) — set by AgniHeroes.SetupInMatch / the lobby.
+// Runs only while the hero is visible and on LOD0, and only on HIGH / VERY HIGH graphics (off on LOW and NORMAL, the phone default).
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -51,9 +51,23 @@ public class AgniHairJiggle : MonoBehaviour
     public static bool Trace;         // proof/debug: log the state once a second
     float traceT;
     static int resets;
+    // Hair sway is HIGH / VERY HIGH only (AgniSettings.Gfx >= 2). LOW and NORMAL (the phone default) never simulate,
+    // in the lobby or in a match; the setting is re-read once a second so a change in the settings panel takes effect.
+    static int gfxCached = -1; static float gfxReadAt = -10f;
+    public static bool QualityAllows
+    {
+        get
+        {
+            if (gfxCached < 0 || Time.unscaledTime - gfxReadAt > 1f) { gfxReadAt = Time.unscaledTime; gfxCached = (int)Agni.UI.AgniSettings.Gfx; }
+            return gfxCached >= 2;
+        }
+    }
+    bool simulating;
     void LateUpdate()
     {
         if (GloballyOff) return;
+        if (!QualityAllows) { if (simulating) { simulating = false; if (init) Reset(); } return; }
+        simulating = true;
         if (!init) Init();
         if (chains.Count == 0) return;
         if (lod0 != null && !lod0.isVisible) return;

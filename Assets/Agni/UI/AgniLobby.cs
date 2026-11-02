@@ -168,6 +168,7 @@ namespace Agni.UI
                 if (v3) ch.transform.localScale = Vector3.one * 0.86f; // one scale for all heroes (Meera 1.89 m in the FBX -> 1.62 m on the stage): the men stand taller
                 var fc = ch.GetComponent<AgniFace>(); if (fc != null) { fc.lookTarget = cam.transform; fc.tier = AgniMahal.Quality <= 0 ? AgniFace.Tier.Low : AgniFace.Tier.High; fc.SetExpression("Soft_Smile", 0.4f); }
                 var lgp = ch.GetComponent<LODGroup>(); if (lgp != null) lgp.ForceLOD(0); // the lobby hero is always the full face
+                var jg = ch.GetComponentInChildren<AgniHairJiggle>(); if (jg != null) jg.enabled = AgniMahal.Quality >= 2; // hair sway: HIGH and VERY HIGH only
                 if (anime) { ch.transform.localPosition = new Vector3(-0.05f, 0.03f, 0); ch.transform.localRotation = Quaternion.Euler(0, 172, 0); ch.AddComponent<AgniIdle>(); }
                 var an = ch.GetComponent<Animator>(); if (an != null) an.enabled = false;
                 if (!anime) foreach (var c in Resources.LoadAll<AnimationClip>(fallbackCharacter)) if (c.name.ToLower() == "idle") { idleClip = c; break; }

@@ -60,9 +60,18 @@ public static class AgniBuild
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
         PlayerSettings.Android.forceInternetPermission = true; // multiplayer (NGO/UTP) + LAN room discovery
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+        // Android-safe rendering + presentation (the LOOT worker switched the editor to Linux for a test build;
+        // these are pinned here so every APK is built the same way whatever the editor last did).
+        PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+        PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.Vulkan, UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
+        PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
+        PlayerSettings.Android.useCustomKeystore = false; // same (debug) signing key as every earlier test APK, so it installs over them
+        // Version: -agniVersion 0.2.0 -agniVersionCode 2 (otherwise left as they are)
+        var ver = ArgVal("-agniVersion", null); if (!string.IsNullOrEmpty(ver)) PlayerSettings.bundleVersion = ver;
+        var vc = ArgVal("-agniVersionCode", null); if (int.TryParse(vc, out int vci) && vci > 0) PlayerSettings.Android.bundleVersionCode = vci;
         EditorUserBuildSettings.buildAppBundle = false;
         AssetDatabase.SaveAssets();
-        Debug.Log("[AgniBuild] configured Android: " + (il2cpp ? "IL2CPP ARM64" : "Mono ARMv7"));
+        Debug.Log("[AgniBuild] configured Android: " + (il2cpp ? "IL2CPP ARM64" : "Mono ARMv7") + " version=" + PlayerSettings.bundleVersion + " code=" + PlayerSettings.Android.bundleVersionCode + " splash=" + PlayerSettings.SplashScreen.show + "/" + PlayerSettings.SplashScreen.showUnityLogo + " apis=" + string.Join(",", PlayerSettings.GetGraphicsAPIs(BuildTarget.Android)));
     }
 
     [MenuItem("Agni Royale/Build test APK")]

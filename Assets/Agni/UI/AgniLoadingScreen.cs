@@ -157,16 +157,16 @@ namespace Agni.UI
             if (op != null) op.allowSceneActivation = true; else SceneManager.LoadScene(nextScene);
         }
 
-        // ---------------- first-launch name popup
+        // ---------------- first-launch guest card (GUEST KHELO: no login; the name is prefilled and optional)
         public void ShowNamePopup()
         {
             if (namePopup != null) { namePopup.SetActive(true); return; }
             var card = K.Modal(canvas.transform, "NamePopup", new Vector2(1240, 700), out namePopup);
             namePopup.transform.SetSiblingIndex(canvas.transform.childCount - 2); // under the fade
-            var title = K.Txt(card, "Title", "APNA NAAM LIKHO", 64, Pal.Ink, TextAnchor.MiddleLeft, true); title.rectTransform.Place(new Vector2(0, 1), new Vector2(380, -75), new Vector2(800, 100), new Vector2(0, 0.5f));
+            var title = K.Txt(card, "Title", "SWAGAT HAI, YODHA!", 64, Pal.Ink, TextAnchor.MiddleLeft, true); title.rectTransform.Place(new Vector2(0, 1), new Vector2(380, -75), new Vector2(800, 100), new Vector2(0, 0.5f));
             var mascot = K.Icon(card, "mascot_wink", new Vector2(300, 412), Color.white); mascot.rectTransform.Place(new Vector2(0, 0), new Vector2(50, 40), new Vector2(300, 412), new Vector2(0, 0));
             mascot.gameObject.AddComponent<Bob>().amp = 8;
-            var sub = K.Txt(card, "Sub", "Yahi naam match me sabko dikhega. 4–12 akshar.", 36, Pal.Hex("#6B4A3A"), TextAnchor.MiddleLeft); sub.rectTransform.Place(new Vector2(0, 1), new Vector2(380, -205), new Vector2(820, 60), new Vector2(0, 0.5f));
+            var sub = K.Txt(card, "Sub", "Login nahi chahiye — sab progress isi phone me save hoga. Naam badalna ho to likho:", 32, Pal.Hex("#6B4A3A"), TextAnchor.MiddleLeft); sub.rectTransform.Place(new Vector2(0, 1), new Vector2(380, -200), new Vector2(820, 90), new Vector2(0, 0.5f)); sub.horizontalOverflow = HorizontalWrapMode.Wrap; sub.verticalOverflow = VerticalWrapMode.Overflow; sub.lineSpacing = 0.95f;
 
             // input
             var inRt = K.R("NameField", card).Place(new Vector2(0, 1), new Vector2(380, -310), new Vector2(800, 110), new Vector2(0, 0.5f));
@@ -179,20 +179,31 @@ namespace Agni.UI
             var count = K.Txt(inRt, "Count", "0/12", 32, Pal.Hex("#B9A796"), TextAnchor.MiddleRight, true); count.rectTransform.Fill(0, 0, 30, 0);
             nameErr = K.Txt(card, "Error", "", 32, Pal.Hex("#D93025"), TextAnchor.MiddleLeft); nameErr.rectTransform.Place(new Vector2(0, 1), new Vector2(384, -400), new Vector2(800, 50), new Vector2(0, 0.5f)); nameErr.fontStyle = FontStyle.Bold;
             nameField.onValueChanged.AddListener(v => { count.text = v.Length + "/12"; nameErr.text = ""; });
+            nameField.text = GuestName();
 
-            var ok = K.Btn(card, "Confirm", "PAKKA!", Pal.Saffron, 60, ConfirmName, "btn_24");
+            var ok = K.Btn(card, "Confirm", "GUEST KHELO", Pal.Saffron, 68, ConfirmName, "btn_24");
             ((RectTransform)ok.transform).Place(new Vector2(0, 0), new Vector2(380, 70), new Vector2(800, 130), new Vector2(0, 0));
             namePopup.AddComponent<PopIn>();
         }
 
         public void SetNameText(string n) { if (nameField != null) nameField.text = n; }
 
+        /// one guest name per phone ("Guest" + 4 digits), made once and kept in PlayerPrefs
+        static string GuestName()
+        {
+            var g = PlayerPrefs.GetString("agni.guestName", "");
+            if (string.IsNullOrEmpty(g)) { g = "Guest" + UnityEngine.Random.Range(1000, 10000); PlayerPrefs.SetString("agni.guestName", g); PlayerPrefs.Save(); }
+            return g;
+        }
+
         public void ConfirmName()
         {
             string n = (nameField.text ?? "").Trim();
+            if (n.Length == 0) n = GuestName();   // guest: no login, no name needed
             var err = AgniProfile.Validate(n);
             if (err != null) { nameErr.text = err; return; }
             AgniProfile.Name = n;
+            PlayerPrefs.SetInt("agni.guest", 1); PlayerPrefs.Save();   // guest account: everything lives in this phone's PlayerPrefs
             namePopup.SetActive(false);
             Go();
         }
