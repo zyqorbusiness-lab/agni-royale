@@ -513,8 +513,9 @@ namespace Agni.UI
             {
                 var card = K.Modal(hud.transform, "ModeSelect", new Vector2(1300, 600), out modePanel);
                 var title = K.Txt(card, "Title", "MODE CHUNO", 60, Pal.Ink, TextAnchor.MiddleLeft, true); title.rectTransform.Place(new Vector2(0, 1), new Vector2(60, -75), new Vector2(760, 100), new Vector2(0, 0.5f));
-                ModeCard(card, new Vector2(60, -190), "AKHADA BR", "Agni Akhada · 50 khiladi · Squad", true, () => { arena = true; modeLabel.text = "AKHADA BR · 50 KHILADI"; modePanel.SetActive(false); });
-                ModeCard(card, new Vector2(660, -190), "BHARAT MAP", "Map ghoomo · combat jaldi", true, () => { arena = false; modeLabel.text = "CLASSIC · BHARAT MAP"; modePanel.SetActive(false); });
+                ModeCard(card, new Vector2(60, -190), "AKHADA BR", "Bharat (India) map · 50 khiladi · Squad", true, () => { arena = true; modeLabel.text = "AKHADA BR · 50 KHILADI"; modePanel.SetActive(false); });
+                // v0.2.1: India is the only match map (Sujon) — the old free-roam map is no longer offered
+                ModeCard(card, new Vector2(660, -190), "NAYA MODE", "Jald aa raha hai", false, () => { });
                 K.CloseX(card, () => modePanel.SetActive(false));
                 modePanel.AddComponent<PopIn>();
                 modePanel.transform.SetSiblingIndex(hud.transform.childCount - 2);
@@ -559,15 +560,20 @@ namespace Agni.UI
         IEnumerator PartyStart()
         {
             while (fade.alpha < 1) { fade.alpha = Mathf.MoveTowards(fade.alpha, 1, Time.unscaledDeltaTime * 3); yield return null; }
+            AgniLoadingOverlay.Show(); AgniLoadingOverlay.Progress = 0.3f;
             PartySvc.StartMatch(); // NGO loads the arena for the whole squad
         }
         IEnumerator StartRoutine()
         {
-            var scene = arena ? Agni.Net.AgniNetConfig.MatchScene : matchScene; // solo arena: AgniArenaBootstrap hosts an offline match with bots
+            arena = true; var scene = Agni.Net.AgniNetConfig.MatchScene;   // v0.2.1: India BR only // solo arena: AgniArenaBootstrap hosts an offline match with bots
             AsyncOperation op = Application.CanStreamedLevelBeLoaded(scene) ? SceneManager.LoadSceneAsync(scene) : null;
             if (op != null) op.allowSceneActivation = false;
             while (fade.alpha < 1) { fade.alpha = Mathf.MoveTowards(fade.alpha, 1, Time.unscaledDeltaTime * 3); yield return null; }
-            if (op != null) op.allowSceneActivation = true; else { Debug.LogWarning("[AgniLobby] match scene not in build: " + scene); starting = false; fade.alpha = 0; }
+            if (op == null) { Debug.LogWarning("[AgniLobby] match scene not in build: " + scene); starting = false; fade.alpha = 0; yield break; }
+            AgniLoadingOverlay.Show();   // v0.2.1: progress bar + tips instead of a black screen while the match loads
+            while (op.progress < 0.89f) { AgniLoadingOverlay.Progress = op.progress / 0.9f * 0.6f; yield return null; }
+            AgniLoadingOverlay.Progress = 0.6f; yield return null;
+            op.allowSceneActivation = true;
         }
     }
 

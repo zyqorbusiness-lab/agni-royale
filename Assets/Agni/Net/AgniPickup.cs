@@ -70,7 +70,19 @@ namespace Agni.Net
                     for (int k = 0; k < n; k++) { var o = Quaternion.Euler(0, (float)r.NextDouble() * 360, 0) * Vector3.forward * (0.45f + 0.2f * k); AgniPickup.ServerDrop(am, AgniItems.FreshAmount(am, r), s.pos + o); Spawned++; }
                 }
             }
-            AgniPickup.ServerScatter(AgniMatch.ArenaRadius, 36); Spawned += 36;
+            AgniPickup.ServerScatter(AgniMatch.ArenaRadius, 70); Spawned += 70;
+            // v0.2.1: loot in the open around every village too (lanes and the chowk), so landing next to houses always finds guns + goli
+            foreach (var v in AgniVillages.Villages)
+            {
+                int n = 10;
+                for (int i = 0; i < n; i++)
+                {
+                    float a = (float)(r.NextDouble() * Mathf.PI * 2), d = v.r * (0.25f + 0.9f * (float)r.NextDouble());
+                    var p = AgniMatch.Ground(new Vector3(v.c.x + Mathf.Cos(a) * d, 0, v.c.y + Mathf.Sin(a) * d)) + Vector3.up * 0.02f;
+                    var id = AgniItems.Roll(i < 3 ? 1 : 0, r); AgniPickup.ServerDrop(id, AgniItems.FreshAmount(id, r), p); Spawned++;
+                    if (AgniItems.IsGun(id)) { var am = AgniItems.Gun(id).ammo; AgniPickup.ServerDrop(am, AgniItems.FreshAmount(am, r), p + new Vector3(0.6f, 0, 0.2f)); Spawned++; }
+                }
+            }
             // airdrops: two per match (test flag -agniAirdropAt <sec> makes the first one early)
             dropTimes.Clear(); dropsDone = 0; float first = AgniNetConfig.ArgF("-agniAirdropAt", 80f);
             dropTimes.Add(matchStart + first); dropTimes.Add(matchStart + first + 120f);

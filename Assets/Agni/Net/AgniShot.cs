@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Agni.Net
 {
-    public class AgniShot : MonoBehaviour
+    public partial class AgniShot : MonoBehaviour
     {
         string dir, mode, tagName; RenderTexture rt, rtUI; int W = 2400, H = 1080;
 
@@ -49,6 +49,8 @@ namespace Agni.Net
             else if (mode == "gunskin") yield return GunSkin();
             else if (mode == "emote") yield return EmoteMatch();
             else if (mode == "netloot") yield return NetLoot();
+            else if (mode == "run") yield return Run();
+            else if (mode == "uitest") yield return UiTest();
             else yield return Grenade();
             Log("done"); Quit(0);
         }
@@ -690,7 +692,7 @@ namespace Agni.Net
                 foreach (var c in overlays)
                 {
                     var d = c.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
-                    Camera baseCam = null; foreach (var b in cams) { var bd = b.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(); if (bd != null && bd.cameraStack != null && bd.cameraStack.Contains(c)) { baseCam = b; bd.cameraStack.Remove(c); } }
+                    Camera baseCam = null; foreach (var b in cams) { var bd = b.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>(); if (bd != null && bd.renderType == UnityEngine.Rendering.Universal.CameraRenderType.Base && bd.cameraStack != null && bd.cameraStack.Contains(c)) { baseCam = b; bd.cameraStack.Remove(c); } }
                     var cf = c.clearFlags; var bg = c.backgroundColor; var tt = c.targetTexture;
                     d.renderType = UnityEngine.Rendering.Universal.CameraRenderType.Base; c.clearFlags = CameraClearFlags.SolidColor; c.backgroundColor = new Color(0, 0, 0, 0);
                     c.targetTexture = rtUI; c.Render(); c.targetTexture = tt;

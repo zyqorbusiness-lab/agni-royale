@@ -26,6 +26,16 @@ namespace Agni.Net
             var go = new GameObject("AgniHud"); var h = go.AddComponent<AgniHud>(); h.lp = lp; h.Build(); return h;
         }
 
+        GameObject settingsPanel;
+        void OpenSettings()
+        {
+            if (settingsPanel == null)
+            {   // its own canvas above the loot HUD (sorting 21) so the bag/quick slots never draw over the panel
+                var sc = CanvasMaker.Make("SettingsHUD", lp.UICam, 0.45f, 60, out _); sc.transform.SetParent(transform, false);
+                settingsPanel = Agni.UI.AgniSettingsPanel.Build(sc.transform);
+            }
+            settingsPanel.transform.SetAsLastSibling(); settingsPanel.SetActive(true);
+        }
         void Build()
         {
             canvas = CanvasMaker.Make("MatchHUD", lp.UICam, 0.5f, 20, out safe); canvas.transform.SetParent(transform, false); CanvasMaker.EnsureEventSystem();
@@ -33,6 +43,7 @@ namespace Agni.Net
             // touch zones first (under everything)
             var look = K.R("LookZone", canvas.transform); look.Fill(); look.anchorMin = new Vector2(0.42f, 0); var li = look.gameObject.AddComponent<Image>(); li.color = new Color(0, 0, 0, 0); look.gameObject.AddComponent<LookZone>().lp = lp;
             var sz = K.R("StickZone", canvas.transform); sz.Fill(); sz.anchorMax = new Vector2(0.42f, 0.75f); var si = sz.gameObject.AddComponent<Image>(); si.color = new Color(0, 0, 0, 0); stickZone = sz.gameObject.AddComponent<StickZone>(); stickZone.lp = lp;
+            sz.SetAsFirstSibling(); look.SetAsFirstSibling();   // v0.2.1: the full-screen touch zones must sit UNDER the buttons (they covered FIRE/JUMP/⚙ before)
             stickBase = K.Img(s, "StickBase", "circle", new Color(1, 1, 1, 0.12f)).rectTransform.Place(new Vector2(0, 0), new Vector2(330, 250), new Vector2(300, 300), new Vector2(0.5f, 0.5f));
             K.Img(stickBase, "Ring", "ring", new Color(1, 1, 1, 0.35f)).rectTransform.Fill();
             stickKnob = K.Img(stickBase, "Knob", "circle", new Color(1, 1, 1, 0.55f)).rectTransform.Place(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(120, 120));
@@ -51,6 +62,10 @@ namespace Agni.Net
             K.Img(map, "Rim", "ring", new Color(1, 1, 1, 0.5f)).rectTransform.Fill(-3, -3, -3, -3);
             mapZone = K.Img(map, "Zone", "ring", new Color(1f, 0.55f, 0.25f, 0.95f)).rectTransform; mapNext = K.Img(map, "Next", "ring", new Color(1, 1, 1, 0.9f)).rectTransform;
             mapMe = K.Img(map, "Me", "ic_chevron", Pal.Gold).rectTransform; mapMe.sizeDelta = new Vector2(34, 34);
+            // v0.2.1: settings in the match too (same panel as the lobby gear), left of the bag button
+            var gearB = K.Btn(s, "Settings", null, Pal.A(Pal.Navy, 0.8f), 10, OpenSettings, "btn_24"); ((RectTransform)gearB.transform).Place(new Vector2(1, 1), new Vector2(-490, -26), new Vector2(110, 110), new Vector2(1, 1));
+            var gsh = gearB.transform.Find("Shadow"); if (gsh) gsh.gameObject.SetActive(false);
+            K.Icon(gearB.transform, "ic_gear", new Vector2(64, 64), Color.white);
             feed = K.R("Feed", s).Place(new Vector2(1, 1), new Vector2(-40, -350), new Vector2(720, 220), new Vector2(1, 1));
 
             // ---- bottom-centre HP
@@ -83,6 +98,7 @@ namespace Agni.Net
             healBtn = Act(s, "Heal", "PATTI", new Vector2(-700, 140), 120, () => P.HealRpc()).gameObject; healCount = K.Txt(healBtn.transform, "N", "", 26, Pal.Gold, TextAnchor.LowerRight, true); healCount.rectTransform.Fill(0, 6, 14, 0);
             cancelBtn = Act(s, "CancelThrow", "RADD", new Vector2(-250, 470), 110, () => P.SlotRpc(0)).gameObject;
             var gb = Act(s, "Gaadi", "BAITHO", new Vector2(-700, 320), 130, () => P.VehicleRpc()); gaadiBtn = gb.gameObject; gaadiTxt = gb.transform.Find("L").GetComponent<Text>(); gaadiBtn.SetActive(false);
+            var kb2 = Act(s, "Kudo", "KUDO!", new Vector2(-400, 330), 250, () => P.JumpRpc()); kudoBtn = kb2.gameObject; kb2.GetComponent<Image>().color = Pal.A(Pal.Saffron, 0.92f); kudoBtn.SetActive(false); // the drop: jump out of the plane
             emoteBtn = Act(s, "Emote", "NACHO", new Vector2(-880, 140), 110, () => { if (P.Emote.Value != 0) P.EmoteRpc(0); else P.EmoteRpc((byte)(AgniEmotes.Pref + 1)); }).gameObject;
             speedTxt = K.Txt(s, "Speed", "", 46, Color.white, TextAnchor.MiddleCenter, true); speedTxt.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0, 175), new Vector2(520, 70)); speedTxt.Outline(new Color(0, 0, 0, 0.6f), 3);
             revive = HoldBtn(s, "Revive", new Vector2(0.5f, 0), new Vector2(0, 260), 170, new Color(0.2f, 0.55f, 0.35f, 0.92f), "UTHAO"); reviveBtn = revive.gameObject;
@@ -121,6 +137,7 @@ namespace Agni.Net
             if (!string.IsNullOrEmpty(label)) { var t = K.Txt(r, "L", label, (int)(size * 0.16f), Color.white, TextAnchor.MiddleCenter, true); t.rectTransform.Fill(); t.Shadow(new Color(0, 0, 0, 0.5f), 0, -3); }
             return r.gameObject.AddComponent<Hold>();
         }
+        GameObject kudoBtn;
         Button Act(RectTransform s, string n, string label, Vector2 pos, float size, System.Action a)
         {
             var b = K.Btn(s, n, null, Pal.A(Pal.Navy, 0.72f), 10, a, "btn_40"); var r = (RectTransform)b.transform; r.Place(new Vector2(1, 0), pos, new Vector2(size, size), new Vector2(0.5f, 0.5f));
@@ -134,12 +151,15 @@ namespace Agni.Net
             if (lp == null || P == null) return;
             var m = AgniMatch.Instance; var z = AgniZone.Instance; float now = Time.time;
             alive.text = (m != null ? m.AliveCount.Value : 0) + " ZINDA"; kills.text = "☠ " + P.Kills.Value;
-            net.text = AgniNet.Role.ToString().ToUpper() + " · " + AgniNet.Ping() + (m != null ? " · " + m.Humans.Value + " khiladi online" : "");
+            net.text = (m != null && m.Humans.Value <= 1) ? "" : AgniNet.Role.ToString().ToUpper() + " · " + AgniNet.Ping() + (m != null ? " · " + m.Humans.Value + " khiladi online" : "");   // solo: no debug line
             // zone line
             if (z != null && z.PhaseIndex.Value >= 0) { float sec = z.SecondsToNext(out bool shr); zone.text = (shr ? "Agni Rekha simat rahi " : "Rekha simtegi ") + Clock(sec) + (z.Inside(P.transform.position) ? "" : "  · BAHAR HO!"); zone.color = z.Inside(P.transform.position) ? Pal.Cream : new Color(1f, 0.55f, 0.4f); }
             else zone.text = "Safe zone jaldi dikhega";
             // centre message
-            if (m != null && m.Phase.Value == (byte)MatchPhase.Warmup) { double left = m.StartAt.Value - (AgniNet.NM != null ? AgniNet.NM.ServerTime.Time : 0); center.text = "Match " + Mathf.CeilToInt(Mathf.Max(0, (float)left)) + " sec me shuru"; }
+            if (m != null && m.Phase.Value == (byte)MatchPhase.Warmup) { double left = m.StartAt.Value - (AgniNet.NM != null ? AgniNet.Now : 0); center.text = "Match " + Mathf.CeilToInt(Mathf.Max(0, (float)left)) + " sec me shuru"; }
+            else if (P.InPlane) center.text = m != null && m.DoorOpen ? "AGNI AIR ✈  KUDO dabao — jahan chaho wahan utro" : "AGNI AIR ✈  darwaza khul raha hai…";
+            else if (P.Air.Value == (byte)AirState.Freefall) center.text = "Joystick se disha do  ·  aage = tez girna";
+            else if (P.Air.Value == (byte)AirState.Chute) center.text = "Parachute khula — utarne ki jagah chuno";
             else if (P.Knocked) center.text = "GIR GAYE!  " + Mathf.CeilToInt(P.Knock.Value / AgniPlayer.BleedPerSec) + "s";
             else if (P.Dead && (m == null || m.Phase.Value != (byte)MatchPhase.Ended)) center.text = "Tum #" + P.Placement.Value + " pe gire";
             else center.text = "";
@@ -151,6 +171,7 @@ namespace Agni.Net
             healCount.text = P.Medkits.Value.ToString(); healBtn.SetActive(P.Medkits.Value > 0 && P.Alive);
             // vehicle: BAITHO near a free vehicle, UTRO while seated; the driver sees the speed
             var nearV = P.Alive && !P.InVehicle ? AgniVehicle.Nearest(P.transform.position, AgniPlayer.EnterRange) : null;
+            kudoBtn.SetActive(P.InPlane && m != null && m.DoorOpen);
             gaadiBtn.SetActive(P.Alive && (P.InVehicle || (nearV != null && nearV.FreeSeat(true) >= 0))); gaadiTxt.text = P.InVehicle ? "UTRO" : "BAITHO";
             emoteBtn.SetActive(P.Alive && !P.InVehicle);
             var rv = P.Vehicle; speedTxt.text = rv != null && P.Driving ? Mathf.RoundToInt(rv.SpeedKmh) + " km/h" : "";
@@ -162,7 +183,7 @@ namespace Agni.Net
             cancelBtn.SetActive(P.Slot.Value == 1 && FireHeld);
             // cook timer on the fire button
             double cs = P.CookStart.Value; var d = ThrowMath.Def((ThrowKind)P.Sel.Value);
-            if (cs > 0 && AgniNet.NM != null) { float el = (float)(AgniNet.NM.ServerTime.Time - cs); cookRing.enabled = true; cookRing.fillAmount = 1f - Mathf.Clamp01(el / d.fuse); cookRing.color = Color.Lerp(new Color(1, 0.3f, 0.2f), new Color(1, 0.88f, 0.4f), cookRing.fillAmount); cookTxt.text = (d.fuse - el).ToString("0.0"); }
+            if (cs > 0 && AgniNet.NM != null) { float el = (float)(AgniNet.Now - cs); cookRing.enabled = true; cookRing.fillAmount = 1f - Mathf.Clamp01(el / d.fuse); cookRing.color = Color.Lerp(new Color(1, 0.3f, 0.2f), new Color(1, 0.88f, 0.4f), cookRing.fillAmount); cookTxt.text = (d.fuse - el).ToString("0.0"); }
             else { cookRing.enabled = false; cookTxt.text = P.Slot.Value == 1 ? d.name : ""; }
             // revive
             AgniPlayer downed = null; foreach (var o in AgniPlayer.All) if (o != P && o.Knocked && o.Team.Value == P.Team.Value && Vector3.Distance(o.transform.position, P.transform.position) < AgniPlayer.ReviveRange) downed = o;

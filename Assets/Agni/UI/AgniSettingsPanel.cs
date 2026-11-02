@@ -16,7 +16,7 @@ namespace Agni.UI
             K.CloseX(card, () => root.SetActive(false));
 
             float y = -212; const float row = 106;
-            Segmented(card, "GRAPHICS", y, new[] { "LOW", "NORMAL", "HIGH", "VERY HIGH" }, () => (int)AgniSettings.Gfx, i => AgniSettings.Gfx = (GfxPreset)i, new bool[] { true, true, true, true }, null); // (sub-captions removed: unreadable at 4 options) y -= row;
+            Segmented(card, "GRAPHICS", y, new[] { "LOW", "NORMAL", "HIGH", "VERY HIGH" }, () => (int)AgniSettings.Gfx, i => AgniSettings.Gfx = (GfxPreset)i, new bool[] { true, true, true, true }, null); y -= row; // (sub-captions removed: unreadable at 4 options) — v0.2.1: the "y -= row" used to sit inside this comment, so FPS was drawn over GRAPHICS
             Segmented(card, "FPS", y, new[] { "30 FPS", "60 FPS" }, () => AgniSettings.Fps >= 60 ? 1 : 0, i => AgniSettings.Fps = i == 1 ? 60 : 30, new[] { true, true }, null); y -= row;
             SliderRow(card, "SENSITIVITY", y, 0.2f, 2.5f, () => AgniSettings.Sensitivity, v => AgniSettings.Sensitivity = v, v => v.ToString("0.0") + "x"); y -= row;
             SliderRow(card, "SOUND EFFECTS", y, 0, 1, () => AgniSettings.Sfx, v => AgniSettings.Sfx = v, v => Mathf.RoundToInt(v * 100) + "%"); y -= row;

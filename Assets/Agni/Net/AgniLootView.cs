@@ -189,6 +189,17 @@ namespace Agni.Net
             AddRims(v, AgniItems.Def(id).rarity);
             // cull loot early on far LODs (phones): the item disappears below ~1.4% of screen height
             var lg = v.AddComponent<LODGroup>(); var rs = v.GetComponentsInChildren<Renderer>(); lg.SetLODs(new[] { new LOD(0.014f, rs) }); lg.RecalculateBounds();
+            // v0.2.1: "loot nahi dikhta" — a rarity-coloured glow disc on the floor under every item, and a soft light beam
+            // above Rare/Epic items so good loot reads from a distance (not part of the LOD group: the beam stays visible far out)
+            var rar = AgniItems.Def(id).rarity; var rc = rar == Rarity.Common ? new Color(1f, 0.95f, 0.8f) : AgniItems.RarityColor(rar);
+            var gp = v.transform.parent != null ? v.transform.parent : v.transform;
+            Prim(PrimitiveType.Quad, gp, new Vector3(0, 0.03f, 0), new Vector3(1.1f, 1.1f, 1f), AgniFx.Glow(new Color(rc.r, rc.g, rc.b, 0.55f), false), new Vector3(90, 0, 0)).name = "LootGlow";
+            if (rar >= Rarity.Rare)
+            {
+                var bc = new Color(rc.r, rc.g, rc.b, 0.35f);
+                Prim(PrimitiveType.Quad, gp, new Vector3(0, 1.6f, 0), new Vector3(3.2f, 0.35f, 1f), AgniFx.Glow(bc, true), new Vector3(0, 0, 90)).name = "LootBeamA";
+                Prim(PrimitiveType.Quad, gp, new Vector3(0, 1.6f, 0), new Vector3(3.2f, 0.35f, 1f), AgniFx.Glow(bc, true), new Vector3(0, 90, 90)).name = "LootBeamB";
+            }
             return v;
         }
         static Bounds Bounds(GameObject g) { Bounds b = default; bool any = false; foreach (var r in g.GetComponentsInChildren<Renderer>()) { if (!r.enabled) continue; if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); } return b; }

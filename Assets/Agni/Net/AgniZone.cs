@@ -25,7 +25,7 @@ namespace Agni.Net
         }
         public override void OnNetworkDespawn() { if (Instance == this) Instance = null; if (view != null) Destroy(view.gameObject); }
 
-        double Now => NetworkManager != null ? NetworkManager.ServerTime.Time : 0;
+        double Now => NetworkManager != null ? AgniNet.Now : 0;
         public float T01 { get { double a = ShrinkStart.Value, b = ShrinkEnd.Value; return b <= a ? (Now >= b ? 1f : 0f) : Mathf.Clamp01((float)((Now - a) / (b - a))); } }
         public Vector3 CenterNow() => Vector3.Lerp(FromC.Value, ToC.Value, T01);
         public float RadiusNow() => Mathf.Lerp(FromR.Value, ToR.Value, T01);
@@ -59,13 +59,14 @@ namespace Agni.Net
     /// ring on the ground for the next circle. Natural, not a neon wall.
     public class AgniZoneView : MonoBehaviour
     {
-        AgniZone z; Transform curtain; LineRenderer next; Material mat; Vector3 lastNC = Vector3.one * 1e9f; float lastNR = -1;
+        public static float HideWithin;   // recording-only: hide the curtain when the camera is this close to it (software-renderer stall)
+        AgniZone z; Transform curtain; MeshRenderer curtainR; LineRenderer next; Material mat; Vector3 lastNC = Vector3.one * 1e9f; float lastNR = -1;
         public static AgniZoneView Create(AgniZone z)
         {
             var go = new GameObject("AgniRekha"); var v = go.AddComponent<AgniZoneView>(); v.z = z;
             var c = new GameObject("Curtain"); c.transform.SetParent(go.transform, false); v.curtain = c.transform;
             c.AddComponent<MeshFilter>().sharedMesh = AgniFx.CylinderMesh(96, 1f, 1f);
-            var mr = c.AddComponent<MeshRenderer>(); v.mat = AgniFx.ZoneMaterial(); mr.sharedMaterial = v.mat; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var mr = c.AddComponent<MeshRenderer>(); v.curtainR = mr; v.mat = AgniFx.ZoneMaterial(); mr.sharedMaterial = v.mat; mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             var n = new GameObject("NextRing"); n.transform.SetParent(go.transform, false); v.next = n.AddComponent<LineRenderer>();
             v.next.loop = true; v.next.positionCount = 128; v.next.widthMultiplier = 0.35f; v.next.useWorldSpace = true; v.next.material = AgniFx.LineMaterial(); v.next.startColor = v.next.endColor = new Color(1, 1, 1, 0.75f);
             return v;
@@ -75,6 +76,7 @@ namespace Agni.Net
             if (z == null) { Destroy(gameObject); return; }
             var c = z.CenterNow(); float r = Mathf.Max(0.5f, z.RadiusNow());
             curtain.position = new Vector3(c.x, -20f, c.z); curtain.localScale = new Vector3(r, 140f, r);
+            if (HideWithin > 0 && Camera.main != null) { var cp = Camera.main.transform.position; float dd = Mathf.Abs(new Vector2(cp.x - c.x, cp.z - c.z).magnitude - r); curtainR.enabled = dd > HideWithin; }
             mat.SetFloat("_Scroll", Time.time * 0.03f); mat.SetFloat("_Tiling", Mathf.Max(4f, r / 6f));
             bool show = z.PhaseIndex.Value >= 0; next.enabled = show;
             if (show && (z.ToC.Value != lastNC || z.ToR.Value != lastNR)) { var nc = lastNC = z.ToC.Value; float nr = lastNR = z.ToR.Value; next.widthMultiplier = Mathf.Clamp(nr / 150f, 0.15f, 0.35f); for (int i = 0; i < 128; i++) { float a = i / 128f * Mathf.PI * 2; var p = new Vector3(nc.x + Mathf.Cos(a) * nr, 0, nc.z + Mathf.Sin(a) * nr); p.y = AgniFx.GroundY(p) + 0.25f; next.SetPosition(i, p); } }

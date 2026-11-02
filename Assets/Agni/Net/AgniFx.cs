@@ -23,6 +23,14 @@ namespace Agni.Net
             mLine = M(Alpha, Band(64)); mPaper = M(Alpha, tChunk);
         }
         public static Material LineMaterial() { Init(); return mLine; }
+        static readonly Dictionary<int, Material> glow = new Dictionary<int, Material>();
+        /// v0.2.1 loot visibility: soft additive glow (disc under the item, beam above rare items), one material per colour
+        public static Material Glow(Color c, bool beam)
+        {
+            Init(); int key = (beam ? 1 : 0) ^ (Mathf.RoundToInt(c.r * 255) << 1) ^ (Mathf.RoundToInt(c.g * 255) << 9) ^ (Mathf.RoundToInt(c.b * 255) << 17);
+            if (glow.TryGetValue(key, out var m) && m != null) return m;
+            m = M(Add, beam ? Band(64) : tSoft); m.SetColor("_Color", c); glow[key] = m; return m;
+        }
         public static Material ZoneMaterial() { Init(); var m = new Material(Shader.Find("AgniRoyale/ZoneCurtain")); m.mainTexture = tNoise; m.SetColor("_Color", new Color(1f, 0.52f, 0.22f, 0.55f)); return m; }
 
         /// line texture: solid along the line (U), soft across its width (V) — a soft dot here made the arc vanish

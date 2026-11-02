@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Agni/Net/AgniArena.unity
     guid: 3d267d1071a7c6e0885312fc3c063917
-  - enabled: 1
+  - enabled: 0
     path: Assets/Agni/Scenes/AgniMap.unity
     guid: d7c4166f53b66090db680c750a23e24f
   m_configObjects:

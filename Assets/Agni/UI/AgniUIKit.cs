@@ -200,15 +200,25 @@ namespace Agni.UI
             safe = K.R("Safe", go.transform); safe.Fill(); safe.gameObject.AddComponent<SafeArea>();
             return c;
         }
+        // One EventSystem for the whole game, kept across scene loads (DontDestroyOnLoad).
+        // v0.2.1 fix: LoadSceneAsync activates the new scene BEFORE the old one unloads, so the lobby used to "find" the
+        // Intro scene's EventSystem in Awake, skip making its own, and then lose it when Intro unloaded: no taps in the lobby.
         public static void EnsureEventSystem()
         {
-            if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() != null) return;
+            var found = Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var e in found)
+            {
+                if (e == null) continue;
+                if (e.gameObject.scene.name == "DontDestroyOnLoad") { if (!e.gameObject.activeSelf) e.gameObject.SetActive(true); return; }
+                if (e.transform.parent == null) { Object.DontDestroyOnLoad(e.gameObject); return; }
+            }
             var es = new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem));
 #if ENABLE_INPUT_SYSTEM
             es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
 #else
             es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
 #endif
+            Object.DontDestroyOnLoad(es);
         }
     }
 }
